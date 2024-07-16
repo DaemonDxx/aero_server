@@ -1,0 +1,6 @@
+version: '3'
+
+tasks:
+  proto:
+    cmds:
+      - protoc -I proto proto/*/*.proto --go_out=./gen/pb/go --go_opt=paths=source_relative --go-grpc_out=./gen/pb/go --go-grpc_opt=paths=source_relative
