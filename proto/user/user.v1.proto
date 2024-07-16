@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/daemondxx/lks_back/gen/pb/go/user;userpb";
+
+import "google/protobuf/empty.proto";
+
+message UserInfo {
+  string accord_login = 1;
+  string accord_password = 2;
+  string lks_login = 3;
+  string lks_password = 4;
+}
+
+message User {
+  uint64 id = 1;
+  bool is_active = 2;
+}
+
+message ChangeStatusRequest {
+  uint64 user_id = 1;
+  bool active_status = 2;
+}
+
+message UpdateRequest {
+  uint64 user_id = 1;
+  string login = 2;
+  string password = 3;
+}
+
+message GetUserInfoRequest {
+  uint64 user_id = 1;
+}
+
+service UserService {
+  rpc GetUserInfo(GetUserInfoRequest) returns (UserInfo);
+  rpc ChangeUserStatus(ChangeStatusRequest) returns (google.protobuf.Empty);
+  rpc UpdateAccord(UpdateRequest) returns (google.protobuf.Empty);
+  rpc UpdateLks(UpdateRequest) returns (google.protobuf.Empty);
+}
