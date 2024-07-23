@@ -3,6 +3,7 @@ package servers
 import (
 	"context"
 	"errors"
+	"fmt"
 	userpb "github.com/daemondxx/lks_back/gen/pb/go/user"
 	"github.com/daemondxx/lks_back/internal/dao"
 	"google.golang.org/grpc/codes"
@@ -41,21 +42,36 @@ func (u UserServer) GetUserInfo(ctx context.Context, r *userpb.GetUserInfoReques
 
 func (u UserServer) ChangeUserStatus(ctx context.Context, r *userpb.ChangeStatusRequest) (*emptypb.Empty, error) {
 	if err := u.uServ.UpdateActiveStatus(ctx, uint(r.UserId), r.ActiveStatus); err != nil {
-		return nil, ErrInternal
+		if errors.Is(err, dao.ErrUserNotFound) {
+			st := status.New(codes.InvalidArgument, fmt.Sprintf("user with id %d not found", r.UserId))
+			return nil, st.Err()
+		} else {
+			return nil, ErrInternal
+		}
 	}
 	return &emptypb.Empty{}, nil
 }
 
 func (u UserServer) UpdateAccord(ctx context.Context, r *userpb.UpdateRequest) (*emptypb.Empty, error) {
 	if err := u.uServ.UpdateAccord(ctx, uint(r.UserId), r.Login, r.Password); err != nil {
-		return nil, ErrInternal
+		if errors.Is(err, dao.ErrUserNotFound) {
+			st := status.New(codes.InvalidArgument, fmt.Sprintf("user with id %d not found", r.UserId))
+			return nil, st.Err()
+		} else {
+			return nil, ErrInternal
+		}
 	}
 	return &emptypb.Empty{}, nil
 }
 
 func (u UserServer) UpdateLks(ctx context.Context, r *userpb.UpdateRequest) (*emptypb.Empty, error) {
 	if err := u.uServ.UpdateLKS(ctx, uint(r.UserId), r.Login, r.Password); err != nil {
-		return nil, ErrInternal
+		if errors.Is(err, dao.ErrUserNotFound) {
+			st := status.New(codes.InvalidArgument, fmt.Sprintf("user with id %d not found", r.UserId))
+			return nil, st.Err()
+		} else {
+			return nil, ErrInternal
+		}
 	}
 	return &emptypb.Empty{}, nil
 }
