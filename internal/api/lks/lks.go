@@ -100,10 +100,10 @@ func (a *LksAPI) GetActualDuty(ctx context.Context, p AuthPayload) ([]CurrentDut
 
 }
 
-func (a *LksAPI) GetPerspectiveDuty(p AuthPayload, month int, year int) ([]PerspectiveDuty, error) {
+func (a *LksAPI) GetPerspectiveDuty(ctx context.Context, p AuthPayload, month int, year int) ([]PerspectiveDuty, error) {
 	log := a.getLogger("get_perspective_duty")
 
-	cookie, err := a.auth(context.Background(), p.AccordLogin, p.AccordPassword, p.LksLogin, p.LksPassword)
+	cookie, err := a.auth(ctx, p.AccordLogin, p.AccordPassword, p.LksLogin, p.LksPassword)
 	if err != nil {
 		return nil, err
 	}
