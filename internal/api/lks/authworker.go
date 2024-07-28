@@ -250,7 +250,7 @@ func (a *AuthWorkerPool) initHandlerSignal(c context.CancelFunc) {
 	}()
 }
 
-func (a *AuthWorkerPool) auth(ctx context.Context, accLogin string, accPass string, lksLogin string, lksPass string) (map[string]string, error) {
+func (a *AuthWorkerPool) Auth(ctx context.Context, accLogin string, accPass string, lksLogin string, lksPass string) (map[string]string, error) {
 	//todo оптимизация получения канала
 	resCh := make(chan *taskResult)
 

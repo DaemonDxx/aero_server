@@ -246,7 +246,7 @@ func (a *LksAPI) auth(ctx context.Context, accLogin string, accPass string, lksL
 		log.Debug().Msg("auth cookie has not in cache")
 	}
 
-	c, err := a.pool.auth(ctx, accLogin, accPass, lksLogin, lksPass)
+	c, err := a.pool.Auth(ctx, accLogin, accPass, lksLogin, lksPass)
 	if err != nil {
 		return nil, err
 	}
