@@ -3,12 +3,21 @@ package flightaware
 import (
 	"context"
 	_ "embed"
-	"github.com/daemondxx/lks_back/entity"
 	"github.com/rs/zerolog"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
+
+type Information struct {
+	FlightNumber  string
+	From          string
+	To            string
+	TimeDeparture time.Time
+	Duration      time.Duration
+	AvgDuration   time.Duration
+}
 
 type ApiConfig struct {
 	MaxTabCount int
@@ -59,6 +68,6 @@ func (f *Api) initHandlerSignal(b *browser) {
 	}()
 }
 
-func (f *Api) GetFlightInfo(ctx context.Context, flight string) (entity.FlightInfo, error) {
+func (f *Api) GetFlightInfo(ctx context.Context, flight string) (Information, error) {
 	return f.browser.GetFlightInfo(ctx, flight)
 }

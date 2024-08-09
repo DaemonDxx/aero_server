@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/chromedp/chromedp"
-	"github.com/daemondxx/lks_back/entity"
 	"github.com/rs/zerolog"
 	"sync"
 )
@@ -105,7 +104,7 @@ func (b *browser) initTabs(countTabs uint) error {
 	return nil
 }
 
-func (b *browser) GetFlightInfo(ctx context.Context, flight string) (entity.FlightInfo, error) {
+func (b *browser) GetFlightInfo(ctx context.Context, flight string) (Information, error) {
 	t := <-b.availableTabs
 
 	t.Execute(flight)
@@ -117,7 +116,7 @@ func (b *browser) GetFlightInfo(ctx context.Context, flight string) (entity.Flig
 	case err := <-t.errChan:
 		//todo подумать над пересозданием вкладки
 		b.availableTabs <- t
-		return entity.FlightInfo{}, err
+		return Information{}, err
 	case <-ctx.Done():
 		go func() {
 			select {
@@ -126,7 +125,7 @@ func (b *browser) GetFlightInfo(ctx context.Context, flight string) (entity.Flig
 				b.availableTabs <- t
 			}
 		}()
-		return entity.FlightInfo{}, ctx.Err()
+		return Information{}, ctx.Err()
 	}
 }
 

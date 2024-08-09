@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
-	"github.com/daemondxx/lks_back/entity"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"regexp"
@@ -41,7 +40,7 @@ type bTab struct {
 	rootLog  *zerolog.Logger
 	tz       *airportTZ
 	taskChan chan string
-	resChan  chan *entity.FlightInfo
+	resChan  chan *Information
 	errChan  chan error
 }
 
@@ -56,7 +55,7 @@ func newTab(ctx context.Context, id int, tz *airportTZ, log *zerolog.Logger) (*b
 		id:       id,
 		tz:       tz,
 		taskChan: make(chan string),
-		resChan:  make(chan *entity.FlightInfo),
+		resChan:  make(chan *Information),
 		errChan:  make(chan error),
 		log:      &l,
 		rootLog:  &l,
@@ -94,7 +93,7 @@ func (t *bTab) listen() {
 				continue
 			}
 
-			var info *entity.FlightInfo
+			var info *Information
 			info, err = t.extractTimeInfo()
 			if err != nil {
 				for _, r := range rows {
@@ -160,7 +159,7 @@ func (t *bTab) gotoInfoPage(url string) error {
 	return nil
 }
 
-func (t *bTab) extractTimeInfo() (*entity.FlightInfo, error) {
+func (t *bTab) extractTimeInfo() (*Information, error) {
 	ctx, cancel := context.WithTimeout(t.ctx, 5*time.Second)
 	defer cancel()
 
@@ -213,7 +212,7 @@ func (t *bTab) extractTimeInfo() (*entity.FlightInfo, error) {
 
 	d := arvTime.sub(&depTime)
 
-	return &entity.FlightInfo{
+	return &Information{
 		From:          depTime.Airport,
 		To:            arvTime.Airport,
 		TimeDeparture: depTime.time(),
