@@ -19,12 +19,21 @@ var fPayload []byte
 
 func TestGetFlightInfo(t *testing.T) {
 	fChan := make(chan string, tabCount)
+	errCount := 0
+	count := 0
+
 	go func() {
 		s := bufio.NewScanner(bytes.NewReader(fPayload))
 		for s.Scan() {
+			if count > 50 {
+				close(fChan)
+				return
+			}
 			number := strings.Replace(s.Text(), "SU", "AFL", 1)
 			fChan <- number
+			count++
 		}
+		close(fChan)
 	}()
 	log := zerolog.New(os.Stdout).Level(zerolog.InfoLevel)
 	api, err := NewFlightInfoAPI(&ApiConfig{
@@ -41,15 +50,15 @@ func TestGetFlightInfo(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			for n := range fChan {
-				info, err := api.GetFlightInfo(ctx, n)
+				_, err := api.GetFlightInfo(ctx, n)
 				if err != nil {
+					errCount++
 					t.Errorf("get flight %s error: %e", n, err)
-				} else {
-					t.Logf("get info flight %s - ok", info.FlightNumber)
 				}
 			}
 			wg.Done()
 		}()
 	}
 	wg.Wait()
+	t.Logf("Error pecrent: %f", float64(errCount)*100/float64(count))
 }
