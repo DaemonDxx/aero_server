@@ -44,7 +44,15 @@ type Api struct {
 
 func NewFlightInfoAPI(cfg *ApiConfig, log *zerolog.Logger) (*Api, error) {
 	l := log.With().Str("service", "flightaware_api").Logger()
-	b, err := newBrowser(uint(cfg.MaxTabCount), withLogger(&l), withDebugMode())
+	var bMode initBrowserFunc
+
+	if cfg.Debug {
+		bMode = withDebugMode()
+	} else {
+		bMode = withProductionMode()
+	}
+
+	b, err := newBrowser(uint(cfg.MaxTabCount), withLogger(&l), bMode)
 	if err != nil {
 		return nil, err
 	}

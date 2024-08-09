@@ -25,10 +25,12 @@ var withDebugMode = func() initBrowserFunc {
 	}
 }
 
-var withProductionMode initBrowserFunc = func(b *browser) {
-	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.Flag("headless", true))...)
-	b.ctx = ctx
-	b.cancelFunc = cancel
+var withProductionMode = func() initBrowserFunc {
+	return func(b *browser) {
+		ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.Flag("headless", true))...)
+		b.ctx = ctx
+		b.cancelFunc = cancel
+	}
 }
 
 type browser struct {
@@ -58,7 +60,7 @@ func newBrowser(maxTabCount uint, initParams ...initBrowserFunc) (*browser, erro
 	}
 
 	if b.ctx == nil {
-		withProductionMode(&b)
+		withProductionMode()(&b)
 	}
 
 	b.log.Debug().Msg("init tz database...")
