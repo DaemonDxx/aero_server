@@ -11,7 +11,6 @@ func filterByDuration(r []flightHistoryRaw) []flightHistoryRaw {
 	var avg uint64
 	var count uint64 = 0
 	length := len(r)
-	//
 	for i := 0; i < length-windowSize+1; i++ {
 		count = 0
 		sum = 0
@@ -24,8 +23,7 @@ func filterByDuration(r []flightHistoryRaw) []flightHistoryRaw {
 			count++
 		}
 		avg = sum / count
-
-		if math.Abs(float64(1-uint64(r[i].Duration)/avg)) < maxFault {
+		if math.Abs(1-(float64(r[i].Duration)/float64(avg))) < maxFault {
 			res = append(res, r[i])
 		}
 	}
