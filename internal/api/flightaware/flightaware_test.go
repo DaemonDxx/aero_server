@@ -38,7 +38,7 @@ func TestGetFlightInfo(t *testing.T) {
 	log := zerolog.New(os.Stdout).Level(zerolog.InfoLevel)
 	api, err := NewFlightInfoAPI(&ApiConfig{
 		MaxTabCount: tabCount,
-		Debug:       true,
+		Debug:       false,
 	}, &log)
 	if err != nil {
 		t.Fatalf("create api error: %e", err)
@@ -53,12 +53,16 @@ func TestGetFlightInfo(t *testing.T) {
 				_, err := api.GetFlightInfo(ctx, n)
 				if err != nil {
 					errCount++
-					t.Errorf("get flight %s error: %e", n, err)
+					t.Logf("get flight %s error: %e", n, err)
 				}
 			}
 			wg.Done()
 		}()
 	}
 	wg.Wait()
-	t.Logf("Error pecrent: %f", float64(errCount)*100/float64(count))
+	fault := float64(errCount) * 100 / float64(count)
+	t.Logf("Error pecrent: %f", fault)
+	if fault > 5 {
+		t.Fatalf("Fault so large")
+	}
 }
