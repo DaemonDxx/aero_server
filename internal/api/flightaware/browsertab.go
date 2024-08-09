@@ -13,10 +13,13 @@ import (
 	"time"
 )
 
+var ErrNotFoundRow = fmt.Errorf("len rows with history data to be 0")
+
 type bTab struct {
 	ctx      context.Context
 	id       int
 	log      *zerolog.Logger
+	rootLog  *zerolog.Logger
 	tz       *airportTZ
 	taskChan chan string
 	resChan  chan *entity.FlightInfo
@@ -37,6 +40,7 @@ func newTab(ctx context.Context, id int, tz *airportTZ, log *zerolog.Logger) (*b
 		resChan:  make(chan *entity.FlightInfo),
 		errChan:  make(chan error),
 		log:      &l,
+		rootLog:  &l,
 	}
 	t.listen()
 
@@ -47,13 +51,14 @@ func (t *bTab) listen() {
 	go func() {
 		for {
 			flight := <-t.taskChan
+
 			//goto actual flight page
-			log := t.log.With().Str("flight", flight).Logger()
+			log := t.rootLog.With().Str("flight", flight).Logger()
 			t.log = &log
 			if err := t.gotoInfoPage(url + flight); err != nil {
 				t.log.Err(err).Msg("navigate to page err")
 				t.errChan <- err
-				return
+				continue
 			}
 
 			rows, err := t.extractFlightHistoryRaw()
@@ -61,10 +66,14 @@ func (t *bTab) listen() {
 			if err != nil {
 				t.log.Err(err).Msg("extract flight history rows error")
 				t.errChan <- err
-				return
+				continue
 			}
 
-			rows = filterByDuration(rows)
+			if len(rows) == 0 {
+				t.log.Err(ErrNotFoundRow).Msg("not found dirty history row")
+				t.errChan <- ErrNotFoundRow
+				continue
+			}
 
 			var info *entity.FlightInfo
 			info, err = t.extractTimeInfo()
@@ -72,23 +81,36 @@ func (t *bTab) listen() {
 				for _, r := range rows {
 					err = nil
 					if err := t.gotoInfoPage(r.Url); err != nil {
-						t.log.Err(err).Msg(fmt.Sprintf("go to %s error", r.Url))
+						t.log.Warn().Msg(fmt.Sprintf("go to %s error", r.Url))
 						continue
 					}
 					info, err = t.extractTimeInfo()
 					if err != nil {
-						t.log.Err(err).Msg("extract time info error")
+						t.log.Warn().Msg(fmt.Sprintf("extract time info error: %e", err))
+						continue
+					}
+
+					if info.Duration < 40*time.Minute {
+						continue
 					}
 				}
 			}
 
 			if info == nil {
 				t.errChan <- fmt.Errorf("cannot extract flight info for flight %s", flight)
-				return
+				continue
+			}
+
+			rows = filterByDuration(rows)
+
+			if len(rows) == 0 {
+				t.log.Warn().Msg("len rows before filtering equal to be 0")
+				info.AvgDuration = info.Duration
+			} else {
+				info.AvgDuration = average(rows)
 			}
 
 			info.FlightNumber = flight
-			info.AvgDuration = average(rows)
 			t.resChan <- info
 		}
 	}()
@@ -108,11 +130,11 @@ func (t *bTab) gotoInfoPage(url string) error {
 		return err
 	}
 
-	ctxTime, cancel = context.WithTimeout(t.ctx, 60*time.Second)
+	ctxTime, cancel = context.WithTimeout(t.ctx, 30*time.Second)
 	defer cancel()
 
 	if err := chromedp.Run(ctxTime,
-		chromedp.WaitVisible(".flightPageProgressTotal", chromedp.ByQuery),
+		chromedp.WaitVisible(".flightPageDataTableContainer", chromedp.ByQuery),
 	); err != nil {
 		return fmt.Errorf("wait selector error: %e", err)
 	}
@@ -149,10 +171,13 @@ func (t *bTab) extractTimeInfo() (*entity.FlightInfo, error) {
 	if err := chromedp.Run(ctx,
 		chromedp.Nodes(".flightPageSummaryAirportCode > .displayFlexElementContainer", &nodes, chromedp.ByQueryAll),
 	); err != nil {
-		return nil, fmt.Errorf("extract nodes with airport raw data.json error: %w", err)
+		return nil, fmt.Errorf("extract nodes with airport raw error: %w", err)
 	}
 
 	for i, n := range nodes[:2] {
+		if len(n.Children) == 0 {
+			return nil, fmt.Errorf("node child value with airport raw data not found")
+		}
 		airport := airportRegexp.FindString(n.Children[0].NodeValue)
 		loc, err := t.tz.GetLocation(airport)
 		if err != nil {
@@ -184,8 +209,8 @@ func (t *bTab) extractFlightHistoryRaw() ([]flightHistoryRaw, error) {
 	defer cancel()
 
 	if err := chromedp.Run(ctxTime,
-		chromedp.Nodes(".flightPageDataRowTall", &nodes, chromedp.ByQueryAll),
-	); err != nil {
+		chromedp.Nodes(".flightPageDataRowTall", &nodes, chromedp.ByQueryAll, chromedp.AtLeast(0)),
+	); err != nil || len(nodes) == 0 {
 		return nil, fmt.Errorf("get flight history raws nodes error: %w", err)
 	}
 
@@ -201,44 +226,42 @@ func (t *bTab) extractFlightHistoryRaw() ([]flightHistoryRaw, error) {
 			continue
 		}
 		c = ""
-		//Check is not unknown row
-		if err := chromedp.Run(ctxTime,
-			chromedp.Nodes(fmt.Sprintf(".flightPageDataRowTall:nth-child(%d) .flightPageResultUnknown", i+2), &child, chromedp.FromNode(n), chromedp.AtLeast(0)),
-		); err != nil {
-			t.log.Err(err).Msg("find unknowns row error")
-			return nil, err
-		} else if len(child) != 0 {
-			child = child[:0]
-			continue
-		}
 
 		//Extract url
 		c, ok = n.Attribute("data-target")
 		if !ok {
-			t.log.Warn().Msg("cannot extract attribute 'data.json-target'")
+			t.log.Warn().Msg(fmt.Sprintf("cannot extract attribute 'data-target' from row %d", i))
 			continue
 		}
 
 		//Extract Duration
+		defer cancel()
 		if err := chromedp.Run(ctxTime,
-			chromedp.Nodes(".flightPageActivityLogData.optional.text-right > span", &child, chromedp.FromNode(n), chromedp.ByQuery),
-		); err != nil {
-			return nil, fmt.Errorf("extract duration node from row error: %e", err)
-		} else if len(child) == 0 {
-			return nil, fmt.Errorf("span with duration info not found")
+			chromedp.Nodes(".flightPageActivityLogData.optional.text-right > span", &child, chromedp.FromNode(n), chromedp.ByQuery, chromedp.AtLeast(0)),
+		); err != nil || len(child) == 0 {
+			t.log.Warn().Msg(fmt.Sprintf("extract duration time error (row %d): not found span", i))
+			continue
 		}
 
-		arr := hourRegexp.FindStringSubmatch(child[0].Children[0].NodeValue)
+		if len(child[0].Children) == 0 {
+			continue
+		}
+
+		sText := child[0].Children[0].NodeValue
+		arr := hourRegexp.FindStringSubmatch(sText)
 		if len(arr) == 0 {
+			t.log.Warn().Msg(fmt.Sprintf("split hour (data %s) error (row %d)", sText, i))
 			continue
 		}
 		h, err := strconv.Atoi(arr[1])
 		if err != nil {
+			t.log.Warn().Msg(fmt.Sprintf("parse hour (data %s) error (row %d)", arr[1], i))
 			continue
 		}
-		arr = minutesRegexp.FindStringSubmatch(child[0].Children[0].NodeValue)
+		arr = minutesRegexp.FindStringSubmatch(sText)
 		m, err := strconv.Atoi(arr[1])
 		if err != nil {
+			t.log.Warn().Msg(fmt.Sprintf("parse minutes (data %s) error (row %d)", arr[1], i))
 			continue
 		}
 		rows = append(rows, flightHistoryRaw{
