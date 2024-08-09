@@ -3,34 +3,12 @@ package flightaware
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"github.com/daemondxx/lks_back/entity"
 	"github.com/rs/zerolog"
 	"os"
 	"os/signal"
-	"regexp"
 	"syscall"
-	"time"
 )
-
-const url = "https://www.flightaware.com/live/flight/"
-
-var (
-	timeRegexp, _    = regexp.Compile("[0-9]{2}[:][0-9]{2}")
-	offsetRegexp, _  = regexp.Compile("\\(([+-])\\d")
-	airportRegexp, _ = regexp.Compile("[a-zA-Z]{3}")
-	hourRegexp, _    = regexp.Compile("(\\d*)[ч]")
-	minutesRegexp, _ = regexp.Compile("(\\d*)[м]")
-)
-
-var (
-	ErrFlightTimeExtraction = errors.New("flight time extraction from site error")
-)
-
-type flightHistoryRaw struct {
-	Duration time.Duration
-	Url      string
-}
 
 type ApiConfig struct {
 	MaxTabCount int

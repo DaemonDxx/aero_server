@@ -8,12 +8,31 @@ import (
 	"github.com/daemondxx/lks_back/entity"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var ErrNotFoundRow = fmt.Errorf("len rows with history data to be 0")
+var (
+	timeRegexp, _    = regexp.Compile("[0-9]{2}[:][0-9]{2}")
+	offsetRegexp, _  = regexp.Compile("\\(([+-])\\d")
+	airportRegexp, _ = regexp.Compile("[a-zA-Z]{3}")
+	hourRegexp, _    = regexp.Compile("(\\d*)[ч, h]")
+	minutesRegexp, _ = regexp.Compile(" (\\d*)[м, m]")
+)
+
+const url = "https://www.flightaware.com/live/flight/"
+
+var (
+	ErrFlightTimeExtraction = errors.New("flight time extraction from site error")
+	ErrNotFoundRow          = fmt.Errorf("len rows with history data to be 0")
+)
+
+type flightHistoryRaw struct {
+	Duration time.Duration
+	Url      string
+}
 
 type bTab struct {
 	ctx      context.Context
