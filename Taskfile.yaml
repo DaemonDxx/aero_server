@@ -4,3 +4,23 @@ tasks:
   proto:
     cmds:
       - protoc -I proto proto/*/*.proto --go_out=./gen/pb/go --go_opt=paths=source_relative --go-grpc_out=./gen/pb/go --go-grpc_opt=paths=source_relative
+
+  test-env-up:
+    dotenv: ["./tests/.env"]
+    cmds:
+      - docker run --name tests-pg-db -p $PG_PORT:5432 -e POSTGRES_USER=$PG_USER -e POSTGRES_PASSWORD=$PG_PASSWORD -e POSTGRES_DB=$PG_DB -d postgres:13.3
+
+  test-env-down:
+    cmds:
+      - docker stop tests-pg-db
+      - docker rm tests-pg-db
+
+  integration-test:
+    cmds:
+      - task: test-env-up
+      - cmd: go test -run "^TestIntegration$"
+      - defer: {task: test-env-down}
+
+  gen-mock:
+    cmds:
+      - mockery
