@@ -1,0 +1,10 @@
+with-expecter: true
+filename: "mock_{{.InterfaceName}}.go"
+dir: "tests/mocks"
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "{{.PackageName}}"
+
+packages:
+  github.com/daemondxx/lks_back/internal/services/order:
+    interfaces:
+      LksAPI:
