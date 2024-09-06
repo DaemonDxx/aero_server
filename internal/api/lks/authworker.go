@@ -129,18 +129,14 @@ func (w *worker) authAccord(ctx context.Context, login string, password string) 
 		}),
 		common.WaitForNetworkIdle(),
 	); err != nil {
-		fmt.Println(err)
 		log.Debug().Msgf("fill form error: %e", err)
 		return err
 	}
 
-	newCtx, cancel = context.WithTimeout(ctx, 100*time.Millisecond)
-	defer cancel()
-
 	log.Debug().Msg("check toast by auth error message...")
 	var node []*cdp.Node
 	if err := chromedp.Run(newCtx,
-		chromedp.Nodes("#credentials_table_postheader > font", &node, chromedp.ByQuery),
+		chromedp.Nodes("#credentials_table_postheader > font", &node, chromedp.ByQueryAll, chromedp.AtLeast(0)),
 	); err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			log.Debug().Msgf("check toast by auth error: %e", err)
