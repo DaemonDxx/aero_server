@@ -234,16 +234,19 @@ func (a *LksAPI) GetArchiveDuty(ctx context.Context, p AuthPayload, month int, y
 
 func (a *LksAPI) auth(ctx context.Context, accLogin string, accPass string, lksLogin string, lksPass string) (map[string]string, error) {
 	log := a.getLogger("auth")
-	log.Debug().Msg("try extract auth cookie from cache...")
-	if c, ok := a.cache.Get(lksLogin); ok {
-		if err := a.checkAuthCookie(c); err != nil {
-			log.Debug().Msg(fmt.Sprintf("auth cookie invalid: %e", err))
-			a.cache.Delete(lksLogin)
-		} else {
-			log.Debug().Msg("valid auth cookie has in cache")
-			return c, nil
+
+	if a.cache != nil {
+		log.Debug().Msg("try extract auth cookie from cache...")
+		if c, ok := a.cache.Get(lksLogin); ok {
+			if err := a.checkAuthCookie(c); err != nil {
+				log.Debug().Msg(fmt.Sprintf("auth cookie invalid: %e", err))
+				a.cache.Delete(lksLogin)
+			} else {
+				log.Debug().Msg("valid auth cookie has in cache")
+				return c, nil
+			}
+			log.Debug().Msg("auth cookie has not in cache")
 		}
-		log.Debug().Msg("auth cookie has not in cache")
 	}
 
 	c, err := a.pool.Auth(ctx, accLogin, accPass, lksLogin, lksPass)
@@ -251,8 +254,10 @@ func (a *LksAPI) auth(ctx context.Context, accLogin string, accPass string, lksL
 		return nil, err
 	}
 
-	if err := a.cache.Put(lksLogin, c); err != nil {
-		log.Warn().Msg(fmt.Sprintf("put cookie in cache error: %e", err))
+	if a.cache != nil {
+		if err := a.cache.Put(lksLogin, c); err != nil {
+			log.Warn().Msg(fmt.Sprintf("put cookie in cache error: %e", err))
+		}
 	}
 
 	return c, nil
