@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/daemondxx/lks_back/gen/pb/go/auth;authpb";
+
+import "user/user.v1.proto";
+
+message AuthResponse {
+  user.v1.User user = 1;
+}
+
+enum AuthSystem {
+  SYSTEM_UNKNOWN = 0;
+  SYSTEM_ACCORD = 1;
+  SYSTEM_LKS = 2;
+}
+
+message ErrorDetails {
+  AuthSystem system = 1;
+}
+
+message CheckResponse {
+  ErrorDetails details = 1;
+}
+
+service AuthService {
+  rpc Auth(user.v1.UserInfo) returns (AuthResponse);
+  rpc Check(user.v1.UserInfo) returns (CheckResponse);
+}
