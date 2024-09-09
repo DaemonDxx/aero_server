@@ -14,16 +14,16 @@ type currentDutyResponse struct {
 }
 
 type CurrentDuty struct {
-	Code         string      `json:"Code"`
-	FlightNumber string      `json:"FlightNumber"`
-	AircraftType string      `json:"AircraftType"`
-	Route        string      `json:"Route"`
-	StartDate    time.Time   `json:"StartDate"`
-	EndDate      time.Time   `json:"EndDate"`
-	ConfirmDate  time.Time   `json:"ConfirmDate"`
-	ConfirmType  int         `json:"ConfirmType"`
-	Target       string      `json:"Target"`
-	Place        string      `json:"Place"`
-	Note         string      `json:"Note"`
-	BlockDate    interface{} `json:"BlockDate"`
+	Code         string     `json:"Code"`
+	FlightNumber string     `json:"FlightNumber"`
+	AircraftType string     `json:"AircraftType"`
+	Route        string     `json:"Route"`
+	StartDate    time.Time  `json:"StartDate"`
+	EndDate      time.Time  `json:"EndDate"`
+	ConfirmDate  *time.Time `json:"ConfirmDate"`
+	ConfirmType  int        `json:"ConfirmType"`
+	Target       string     `json:"Target"`
+	Place        string     `json:"Place"`
+	Note         string     `json:"Note"`
+	BlockDate    *time.Time `json:"BlockDate"`
 }
