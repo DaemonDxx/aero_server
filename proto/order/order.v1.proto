@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package order.v1;
+
+option go_package = "github.com/daemondxx/lks_back/gen/pb/go/order;orderpb";
+
+import "google/protobuf/timestamp.proto";
+
+message Flight {
+  uint64 id = 1;
+  string flight_number = 2;
+  string airplane = 3;
+  google.protobuf.Timestamp departure = 4;
+  google.protobuf.Timestamp arrival = 5;
+  uint64 duration = 6;
+  int64 status = 7;
+}
+
+message OrderItem {
+  uint64 id = 1;
+  repeated Flight flights = 2;
+  google.protobuf.Timestamp departure = 3;
+  google.protobuf.Timestamp arrival = 4;
+  string description = 5;
+  string route = 6;
+  google.protobuf.Timestamp confirm_date = 7;
+}
+
+message Order {
+  uint64 id = 1;
+  uint64 user_id = 2;
+  repeated OrderItem items = 3;
+  uint64 status = 4;
+}
+
+message ActualOrderRequest {
+  uint64 user_id = 1;
+}
+
+message ActualOrderResponse {
+  Order order = 1;
+}
+
+service OrderService {
+  rpc GetActualOrder(ActualOrderRequest) returns (ActualOrderResponse);
+}
