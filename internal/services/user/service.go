@@ -116,9 +116,9 @@ func (s *Service) UpdateLKS(ctx context.Context, userID uint, login string, pass
 	}
 
 	if err := s.d.Update(ctx, entity.User{
-		ID:             userID,
-		AccordLogin:    login,
-		AccordPassword: password,
+		ID:          userID,
+		LKSLogin:    login,
+		LKSPassword: password,
 	}); err != nil {
 		log.Debug().
 			Uint("user_id", userID).
