@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -30,9 +31,14 @@ type Service struct {
 }
 
 func NewOrderService(dao DAO, l LksAPI, u UserService, log *zerolog.Logger) *Service {
-	logger := log.With().Str("service", "order_service").Logger()
+	if log == nil {
+		var l zerolog.Logger
+		l = zerolog.New(os.Stdout).Level(zerolog.NoLevel)
+		log = &l
+	}
+
 	return &Service{
-		LoggedService: services.NewLoggedService(&logger),
+		LoggedService: services.NewLoggedService(log),
 		oDAO:          dao,
 		lks:           l,
 		uServ:         u,

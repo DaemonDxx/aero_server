@@ -8,6 +8,7 @@ import (
 	"github.com/daemondxx/lks_back/internal/api/lks"
 	"github.com/daemondxx/lks_back/internal/services/user"
 	"github.com/rs/zerolog"
+	"os"
 )
 
 type AuthChecker interface {
@@ -22,12 +23,16 @@ type AuthServer struct {
 }
 
 func NewAuthServer(u UserService, c AuthChecker, log *zerolog.Logger) *AuthServer {
-	l := log.With().Str("grpc_server_name", "auth_server").Logger()
+	if log == nil {
+		var l zerolog.Logger
+		l = zerolog.New(os.Stdout).Level(zerolog.NoLevel)
+		log = &l
+	}
 
 	return &AuthServer{
 		c:   c,
 		u:   u,
-		log: &l,
+		log: log,
 	}
 }
 

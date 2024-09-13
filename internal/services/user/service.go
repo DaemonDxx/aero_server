@@ -7,6 +7,7 @@ import (
 	"github.com/daemondxx/lks_back/entity"
 	"github.com/daemondxx/lks_back/internal/services"
 	"github.com/rs/zerolog"
+	"os"
 )
 
 const servName = "userService"
@@ -24,21 +25,26 @@ type DAO interface {
 }
 
 type Service struct {
-	d   DAO
-	log *zerolog.Logger
+	services.LoggedService
+	d DAO
 }
 
 func NewUserService(d DAO, log *zerolog.Logger) *Service {
-	l := log.With().Str("service", "user_service").Logger()
+	if log == nil {
+		var l zerolog.Logger
+		l = zerolog.New(os.Stdout).Level(zerolog.NoLevel)
+		log = &l
+	}
+
 	return &Service{
-		d:   d,
-		log: &l,
+		d:             d,
+		LoggedService: services.NewLoggedService(log),
 	}
 }
 
 func (s *Service) Register(ctx context.Context, accLogin string, accPass string, lksLogin string, lksPass string) (entity.User, error) {
 	var user entity.User
-	log := s.getLogger("register")
+	log := s.GetLogger("register")
 
 	users, err := s.d.Find(ctx, &entity.User{
 		AccordLogin: accLogin,
@@ -85,7 +91,7 @@ func (s *Service) Register(ctx context.Context, accLogin string, accPass string,
 }
 
 func (s *Service) UpdateAccord(ctx context.Context, userID uint, login string, password string) error {
-	log := s.getLogger("update_accord")
+	log := s.GetLogger("update_accord")
 
 	if err := s.hasUserByID(ctx, userID); err != nil {
 		return err
@@ -109,7 +115,7 @@ func (s *Service) UpdateAccord(ctx context.Context, userID uint, login string, p
 }
 
 func (s *Service) UpdateLKS(ctx context.Context, userID uint, login string, password string) error {
-	log := s.getLogger("update_lks")
+	log := s.GetLogger("update_lks")
 
 	if err := s.hasUserByID(ctx, userID); err != nil {
 		return err
@@ -133,7 +139,7 @@ func (s *Service) UpdateLKS(ctx context.Context, userID uint, login string, pass
 }
 
 func (s *Service) UpdateActiveStatus(ctx context.Context, userID uint, status bool) error {
-	log := s.getLogger("update_active_status")
+	log := s.GetLogger("update_active_status")
 	if err := s.hasUserByID(ctx, userID); err != nil {
 		return err
 	}
@@ -156,7 +162,7 @@ func (s *Service) UpdateActiveStatus(ctx context.Context, userID uint, status bo
 
 func (s *Service) GetUserByAccordLogin(ctx context.Context, accLogin string) (entity.User, error) {
 	var u entity.User
-	log := s.getLogger("get_user_by_accord_login")
+	log := s.GetLogger("get_user_by_accord_login")
 
 	users, err := s.d.Find(ctx, &entity.User{AccordLogin: accLogin})
 	if err != nil {
@@ -179,7 +185,7 @@ func (s *Service) GetUserByAccordLogin(ctx context.Context, accLogin string) (en
 }
 
 func (s *Service) GetUserByID(ctx context.Context, id uint) (entity.User, error) {
-	log := s.getLogger("get_user_by_id")
+	log := s.GetLogger("get_user_by_id")
 
 	if u, err := s.d.GetByID(ctx, id); err != nil {
 		log.Debug().
@@ -196,7 +202,7 @@ func (s *Service) GetUserByID(ctx context.Context, id uint) (entity.User, error)
 }
 
 func (s *Service) hasUserByID(ctx context.Context, userID uint) error {
-	log := s.getLogger("has_user_by_id")
+	log := s.GetLogger("has_user_by_id")
 	if _, err := s.d.GetByID(ctx, userID); err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			return &services.ErrServ{
@@ -216,8 +222,4 @@ func (s *Service) hasUserByID(ctx context.Context, userID uint) error {
 		}
 	}
 	return nil
-}
-
-func (s *Service) getLogger(method string) zerolog.Logger {
-	return s.log.With().Str("method", method).Logger()
 }

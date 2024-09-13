@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"os"
 )
 
 type UserServer struct {
@@ -19,14 +20,15 @@ type UserServer struct {
 }
 
 func NewUserServer(uServ UserService, log *zerolog.Logger) *UserServer {
-	l := log.
-		With().
-		Str("grpc_server_name", "user_server").
-		Logger()
+	if log == nil {
+		var l zerolog.Logger
+		l = zerolog.New(os.Stdout).Level(zerolog.NoLevel)
+		log = &l
+	}
 
 	return &UserServer{
 		uServ: uServ,
-		log:   &l,
+		log:   log,
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/valyala/fasthttp"
+	"os"
 	"time"
 )
 
@@ -41,13 +42,17 @@ type LksAPI struct {
 }
 
 func NewLksAPI(cfg *LksAPIConfig, cache CookieCache, log *zerolog.Logger) *LksAPI {
-	l := log.With().Str("service", "lks_api").Logger()
+	if log == nil {
+		var l zerolog.Logger
+		l = zerolog.New(os.Stdout).Level(zerolog.NoLevel)
+		log = &l
+	}
 	pool := NewAuthWorkerPool(&AuthWorkerPoolConfig{
 		PoolSize: cfg.AuthWorkerPoolSize,
 		Debug:    cfg.Debug,
 	}, log)
 	lks := &LksAPI{
-		log:   &l,
+		log:   log,
 		cache: cache,
 		pool:  pool,
 	}

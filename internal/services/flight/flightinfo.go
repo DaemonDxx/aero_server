@@ -8,6 +8,7 @@ import (
 	"github.com/daemondxx/lks_back/internal/dao"
 	"github.com/daemondxx/lks_back/internal/services"
 	"github.com/rs/zerolog"
+	"os"
 	"strconv"
 )
 
@@ -29,11 +30,15 @@ type InfoService struct {
 }
 
 func NewFlightInfoService(d InfoDAO, api InfoAPI, log *zerolog.Logger) *InfoService {
-	l := log.With().Str("service", "flight_info_service").Logger()
+	if log == nil {
+		var l zerolog.Logger
+		l = zerolog.New(os.Stdout).Level(zerolog.NoLevel)
+		log = &l
+	}
 	return &InfoService{
 		d:             d,
 		api:           api,
-		LoggedService: services.NewLoggedService(&l),
+		LoggedService: services.NewLoggedService(log),
 	}
 }
 
