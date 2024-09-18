@@ -8,3 +8,9 @@ packages:
   github.com/daemondxx/lks_back/internal/services/order:
     interfaces:
       LksAPI:
+
+  github.com/daemondxx/lks_back/internal/services/collector:
+    interfaces:
+      UserDAO:
+      NotificationService:
+      OrderService:
