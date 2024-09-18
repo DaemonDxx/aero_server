@@ -1,8 +1,8 @@
 with-expecter: true
 filename: "mock_{{.InterfaceName}}.go"
-dir: "tests/mocks"
+dir: "tests/mocks/{{.PackageName}}"
 mockname: "Mock{{.InterfaceName}}"
-outpkg: "{{.PackageName}}"
+outpkg: "{{.PackageName}}_mock"
 
 packages:
   github.com/daemondxx/lks_back/internal/services/order:
