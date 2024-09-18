@@ -26,10 +26,10 @@ type Service struct {
 	uDAO       UserDAO
 	notifyServ NotificationService
 	oServ      OrderService
-	cfg        Config
+	cfg        *Config
 }
 
-func NewCollectorService(uDAO UserDAO, oServ OrderService, n NotificationService, cfg Config, log *zerolog.Logger) *Service {
+func NewCollectorService(uDAO UserDAO, oServ OrderService, n NotificationService, cfg *Config, log *zerolog.Logger) *Service {
 	if log == nil {
 		var l zerolog.Logger
 		l = zerolog.New(os.Stdout).Level(zerolog.NoLevel)
