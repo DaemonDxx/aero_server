@@ -56,7 +56,7 @@ func (s *Service) CollectActualOrder(ctx context.Context) error {
 	log := s.GetLogger("collect_actual_order")
 
 	log.Debug().Msg("find all active user")
-	users, err := s.uDAO.Find(ctx, entity.User{
+	users, err := s.uDAO.Find(ctx, &entity.User{
 		IsActive: true,
 	})
 	if err != nil {

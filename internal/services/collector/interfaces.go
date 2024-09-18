@@ -6,7 +6,7 @@ import (
 )
 
 type UserDAO interface {
-	Find(ctx context.Context, q entity.User) ([]entity.User, error)
+	Find(ctx context.Context, q *entity.User) ([]entity.User, error)
 }
 
 type NotificationService interface {
