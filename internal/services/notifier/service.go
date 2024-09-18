@@ -6,9 +6,10 @@ import (
 	"github.com/daemondxx/lks_back/internal/services"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/kafka-go"
+	"time"
 )
 
-const servName = "notification_service"
+const defaultWriteTimeout = 30 * time.Second
 
 type Service struct {
 	services.LoggedService
@@ -16,30 +17,24 @@ type Service struct {
 }
 
 func NewNotifierService(w *kafka.Writer, log *zerolog.Logger) *Service {
-	l := log.With().Str("service", "notifier_service").Logger()
 	return &Service{
 		w:             w,
-		LoggedService: services.NewLoggedService(&l),
+		LoggedService: services.NewLoggedService(log),
 	}
 }
 
-func (s Service) Notify(ctx context.Context, n Notification) error {
+func (s Service) Notify(n Notification) {
+	log := s.GetLogger("notify")
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultWriteTimeout)
+	defer cancel()
+
 	b, err := json.Marshal(n)
 	if err != nil {
-		return &services.ErrServ{
-			Service: servName,
-			Message: "marshal notification object error",
-			Err:     err,
-		}
+		log.Err(err).Msg("marshal payload error")
 	}
 
 	if err := s.w.WriteMessages(ctx, kafka.Message{Key: []byte(n.Key), Value: b}); err != nil {
-		return &services.ErrServ{
-			Service: servName,
-			Message: "send message error",
-			Err:     err,
-		}
+		log.Err(err).Msg("send message error")
 	}
-
-	return nil
 }
