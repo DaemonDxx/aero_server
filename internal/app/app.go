@@ -10,9 +10,13 @@ import (
 	"github.com/daemondxx/lks_back/internal/dao"
 	"github.com/daemondxx/lks_back/internal/servers"
 	"github.com/daemondxx/lks_back/internal/services/authchecker"
+	"github.com/daemondxx/lks_back/internal/services/collector"
+	"github.com/daemondxx/lks_back/internal/services/notifier"
+	"github.com/daemondxx/lks_back/internal/services/notifier/implementation"
 	"github.com/daemondxx/lks_back/internal/services/order"
 	"github.com/daemondxx/lks_back/internal/services/user"
 	"github.com/rs/zerolog"
+	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gorm.io/driver/postgres"
@@ -21,6 +25,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 type LKSApp struct {
@@ -120,6 +125,37 @@ func (a *LKSApp) initServices(cfg Config) error {
 	}, nil, &lksApiLog)
 	checker := authchecker.NewAuthCheckerClient(lksApi)
 
+	if err := a.checkKafkaConnection(cfg.Notifier.Addr); err != nil {
+		return err
+	}
+
+	kWriter := &kafka.Writer{
+		Addr:                   kafka.TCP(cfg.Notifier.Addr...),
+		Topic:                  cfg.Notifier.Topic,
+		Balancer:               &kafka.LeastBytes{},
+		AllowAutoTopicCreation: false,
+	}
+
+	notifyLog := a.log.With().Str("service", "notifier").Logger()
+	notifyServ := notifier.NewNotifierService(kWriter, &notifyLog)
+
+	collectorNotify := implementation.NewCollectorNotifier(notifyServ)
+
+	collectorLog := a.log.With().Str("service", "collector").Logger()
+	collectorServ := collector.NewCollectorService(userDAO, oServ, collectorNotify, &collector.Config{
+		MaxAttempts:     6 * 3,
+		MinTimeoutRetry: 10 * time.Minute,
+	}, &collectorLog)
+
+	autoCollectLog := a.log.With().Str("service", "auto_collector").Logger()
+	autoCollectServ, err := collector.NewAutoWorker(collectorServ, &collector.AutoWorkerConfig{
+		ActualOrderCronList: cfg.AutoCollector.ActualOrderCronList,
+		MonthOrderCronList:  nil,
+		TaskTimeout:         cfg.AutoCollector.TaskTimeout,
+	}, &autoCollectLog)
+
+	autoCollectServ.Start()
+
 	a.server = grpc.NewServer()
 
 	authServerLog := a.log.With().Str("service", "auth_server").Logger()
@@ -143,6 +179,19 @@ func (a *LKSApp) initServices(cfg Config) error {
 	a.listener = listener
 
 	return nil
+}
+
+func (a *LKSApp) checkKafkaConnection(addresses []string) error {
+	for _, address := range addresses {
+		conn, err := kafka.Dial("tcp", address)
+		if err != nil {
+			a.log.Warn().Msg(fmt.Sprintf("failed connection to kafka %s: %e", address, err))
+		} else {
+			conn.Close()
+			return nil
+		}
+	}
+	return fmt.Errorf("connection to kafka failed")
 }
 
 func (a *LKSApp) Run() error {
