@@ -6,9 +6,21 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 )
 
 const GrpcDefaultPort = "6030"
+
+type AutoCollectorConfig struct {
+	ActualOrderCronList []string `validate:"required,dive,cron"`
+	TaskTimeout         time.Duration
+}
+
+type NotifierConfig struct {
+	Addr  []string `validate:"required,gt=0,dive,hostname_port"`
+	Topic string   `validate:"required,gt=0"`
+}
 
 type LKSAPIConfig struct {
 	WorkerPoolSize int `validate:"required"`
@@ -33,17 +45,18 @@ type GRPCConfig struct {
 }
 
 type Config struct {
-	Database  DBConfig
-	GRPC      GRPCConfig
-	LKSApi    LKSAPIConfig
-	FlightAPI FlightInfoAPIConfig
+	Database      DBConfig
+	GRPC          GRPCConfig
+	LKSApi        LKSAPIConfig
+	FlightAPI     FlightInfoAPIConfig
+	Notifier      NotifierConfig
+	AutoCollector AutoCollectorConfig
 }
 
 func InitConfig() (Config, error) {
 	cfg := Config{}
 
 	path := os.Getenv("CONFIG_FILE_PATH")
-	fmt.Println(path)
 
 	if path != "" {
 		if err := godotenv.Load(path); err != nil {
@@ -53,16 +66,22 @@ func InitConfig() (Config, error) {
 
 	cfg.initDBConfig()
 	cfg.initGRPCConfig()
+	cfg.initAutoCollectorConfig()
 	if err := cfg.initLKSApiConfig(); err != nil {
 		return cfg, fmt.Errorf("init lks api config error: %e", err)
 	}
 	if err := cfg.initFlightInfoApiConfig(); err != nil {
 		return cfg, fmt.Errorf("init flight info api config error: %e", err)
 	}
+	if err := cfg.initNotificationConfig(); err != nil {
+		return Config{}, fmt.Errorf("init notification config error: %e", err)
+	}
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
 	if err := validate.Struct(cfg); err != nil {
+		e := err.(validator.ValidationErrors)
+		fmt.Println(e)
 		return cfg, fmt.Errorf("validate config error: %e", err)
 	}
 
@@ -130,4 +149,26 @@ func (c *Config) initFlightInfoApiConfig() error {
 	}
 
 	return nil
+}
+
+func (c *Config) initNotificationConfig() error {
+	addrStr := os.Getenv("NOTIFIER_ADDRS")
+	arr := strings.Split(addrStr, ",")
+	if len(arr) == 0 {
+		return fmt.Errorf("notifier has not address")
+	}
+	c.Notifier = NotifierConfig{
+		Addr:  arr,
+		Topic: "notification",
+	}
+	return nil
+}
+
+func (c *Config) initAutoCollectorConfig() {
+	c.AutoCollector = AutoCollectorConfig{
+		TaskTimeout: 6 * time.Hour,
+	}
+	cronStr := os.Getenv("COLLECTOR_ACTUAL_ORDER_CRON")
+	c.AutoCollector.ActualOrderCronList = strings.Split(cronStr, ";")
+
 }
