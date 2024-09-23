@@ -157,9 +157,10 @@ func (c *Config) initNotificationConfig() error {
 	if len(arr) == 0 {
 		return fmt.Errorf("notifier has not address")
 	}
+	topic := os.Getenv("NOTIFIER_TOPIC")
 	c.Notifier = NotifierConfig{
 		Addr:  arr,
-		Topic: "notification",
+		Topic: topic,
 	}
 	return nil
 }
