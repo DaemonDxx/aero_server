@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -29,37 +30,68 @@ type taskResult struct {
 }
 
 type worker struct {
-	ctx context.Context
-	tCh chan authTask
-	log *zerolog.Logger
+	rootCtx    context.Context
+	ctx        context.Context
+	tCh        chan authTask
+	log        *zerolog.Logger
+	opts       []chromedp.ExecAllocatorOption
+	cancelFunc context.CancelFunc
+	mu         sync.Mutex
 }
 
 func newWorker(ctx context.Context, tCh chan authTask, log *zerolog.Logger, debug bool) *worker {
 	w := &worker{
-		ctx: ctx,
-		tCh: tCh,
-		log: log,
+		rootCtx: ctx,
+		tCh:     tCh,
+		log:     log,
+		mu:      sync.Mutex{},
 	}
-	w.init(debug)
+	w.opts = append(w.opts, chromedp.Flag("headless", !debug))
+	w.init()
+
 	return w
 }
 
-func (w *worker) init(debug bool) {
-	var ctx context.Context
-
-	if debug {
-		ctx, _ = chromedp.NewExecAllocator(w.ctx, append(chromedp.DefaultExecAllocatorOptions[:], chromedp.Flag("headless", false))...)
-	} else {
-		ctx, _ = chromedp.NewExecAllocator(w.ctx, append(chromedp.DefaultExecAllocatorOptions[:], chromedp.Flag("headless", true))...)
+func (w *worker) init() {
+	if err := w.initCtx(); err != nil {
+		w.log.Fatal().Msg(fmt.Sprintf("init browser context error: %e", err))
 	}
+	w.initOnCancelCtxHandle()
+}
 
-	ctx, _ = chromedp.NewContext(ctx)
+func (w *worker) initCtx() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	execCtx, cancel := chromedp.NewExecAllocator(w.rootCtx, append(chromedp.DefaultExecAllocatorOptions[:], w.opts...)...)
+	w.cancelFunc = cancel
+
+	ctx, _ := chromedp.NewContext(execCtx)
 	w.ctx = ctx
-	chromedp.Run(ctx)
 
+	return chromedp.Run(ctx)
+}
+
+func (w *worker) initOnCancelCtxHandle() {
+	go func() {
+		for {
+			<-w.ctx.Done()
+			w.cancelFunc()
+
+			w.log.Warn().Msg("browser context canceled. recreate context...")
+			if err := w.initCtx(); err != nil {
+				w.log.Fatal().Msg(fmt.Sprintf("context init error: %e", err))
+			}
+			w.log.Info().Msg("browser context is recreated")
+		}
+	}()
+}
+
+func (w *worker) listen() {
 	go func() {
 		for {
 			t := <-w.tCh
+			w.mu.Lock()
 			c, err := w.auth(w.ctx, t.accLogin, t.accPass, t.lksLogin, t.lksPass)
 			//todo оптимазция создания результатов
 			t.resCh <- &taskResult{
@@ -71,6 +103,7 @@ func (w *worker) init(debug bool) {
 			if err := chromedp.Run(w.ctx, common.ClearCookies()); err != nil {
 				w.log.Err(err).Msg("clear cookies error")
 			}
+			w.mu.Unlock()
 		}
 	}()
 }
@@ -221,7 +254,8 @@ func NewAuthWorkerPool(cfg *AuthWorkerPoolConfig, log *zerolog.Logger) *AuthWork
 
 	for i := 0; i < int(cfg.PoolSize); i++ {
 		wLog := log.With().Str("service", "auth_worker_"+string(rune(i))).Logger()
-		newWorker(rootCtx, taskCh, &wLog, cfg.Debug)
+		w := newWorker(rootCtx, taskCh, &wLog, cfg.Debug)
+		w.listen()
 	}
 
 	pool := &AuthWorkerPool{
@@ -234,7 +268,6 @@ func NewAuthWorkerPool(cfg *AuthWorkerPoolConfig, log *zerolog.Logger) *AuthWork
 func (a *AuthWorkerPool) initHandlerSignal(c context.CancelFunc) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh,
-		syscall.SIGHUP,
 		syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
