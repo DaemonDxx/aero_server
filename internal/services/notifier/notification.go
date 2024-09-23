@@ -1,7 +1,7 @@
 package notifier
 
 type Notification struct {
-	FromUserID uint
-	Key        string
-	Payload    interface{}
+	FromUserID uint        `json:"fromUserID"`
+	Key        string      `json:"key"`
+	Payload    interface{} `json:"payload"`
 }

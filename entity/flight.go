@@ -14,12 +14,12 @@ const (
 )
 
 type Flight struct {
-	gorm.Model
-	FlightNumber string
-	Airplane     string
-	Departure    *time.Time
-	Arrival      *time.Time
-	Duration     *time.Duration
-	Status       FlightStatus
-	OItemID      uint
+	gorm.Model   `json:"gorm.Model"`
+	FlightNumber string         `json:"flightNumber,omitempty"`
+	Airplane     string         `json:"airplane,omitempty"`
+	Departure    *time.Time     `json:"departure,omitempty"`
+	Arrival      *time.Time     `json:"arrival,omitempty"`
+	Duration     *time.Duration `json:"duration,omitempty"`
+	Status       FlightStatus   `json:"status,omitempty"`
+	OItemID      uint           `json:"oItemID,omitempty"`
 }

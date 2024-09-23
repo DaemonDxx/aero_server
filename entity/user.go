@@ -4,10 +4,10 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	ID             uint
-	AccordLogin    string `gorm:"unique"`
-	LKSLogin       string `gorm:"unique"`
-	AccordPassword string
-	LKSPassword    string
-	IsActive       bool
+	ID             uint   `json:"id,omitempty"`
+	AccordLogin    string `gorm:"unique" json:"accordLogin,omitempty"`
+	LKSLogin       string `gorm:"unique" json:"lksLogin,omitempty"`
+	AccordPassword string `json:"accordPassword,omitempty"`
+	LKSPassword    string `json:"lksPassword,omitempty"`
+	IsActive       bool   `json:"isActive,omitempty"`
 }

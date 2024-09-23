@@ -6,12 +6,12 @@ import (
 )
 
 type OrderItem struct {
-	gorm.Model
-	Flights     []Flight `gorm:"foreignKey:OItemID"`
-	Departure   time.Time
-	Arrival     time.Time
-	Description string
-	Route       string
-	ConfirmDate *time.Time
-	OrderID     uint
+	gorm.Model  `json:"gorm.Model"`
+	Flights     []Flight   `gorm:"foreignKey:OItemID" json:"flights,omitempty"`
+	Departure   time.Time  `json:"departure"`
+	Arrival     time.Time  `json:"arrival"`
+	Description string     `json:"description,omitempty"`
+	Route       string     `json:"route,omitempty"`
+	ConfirmDate *time.Time `json:"confirmDate,omitempty"`
+	OrderID     uint       `json:"orderID,omitempty"`
 }

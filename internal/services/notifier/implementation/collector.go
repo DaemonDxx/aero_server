@@ -26,7 +26,7 @@ func (c *CollectorNotifier) ActualOrderNotify(userID uint, o entity.Order) {
 		FromUserID: userID,
 		Key:        updateActualOrderKey,
 		Payload: struct {
-			Order entity.Order
+			Order entity.Order `json:"order"`
 		}{
 			Order: o,
 		},
