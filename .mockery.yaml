@@ -5,12 +5,31 @@ mockname: "Mock{{.InterfaceName}}"
 outpkg: "{{.PackageName}}_mock"
 
 packages:
-  github.com/daemondxx/lks_back/internal/services/order:
-    interfaces:
-      LksAPI:
 
-  github.com/daemondxx/lks_back/internal/services/collector:
+  github.com/daemondxx/lks_back/internal/server/services/account:
+    config:
+      dir: "mocks/server/services/{{.PackageName}}"
     interfaces:
-      UserDAO:
-      NotificationService:
-      OrderService:
+      TokenService:
+      AccountDAO:
+
+  github.com/daemondxx/lks_back/internal/server/services/credential:
+    config:
+      dir: "mocks/server/services/{{.PackageName}}"
+    interfaces:
+      AccountService:
+      AuthChecker:
+      CredentialDAO:
+
+  github.com/daemondxx/lks_back/internal/server/controllers/account:
+    config:
+      dir: "mocks/server/controllers/{{.PackageName}}"
+    interfaces:
+      AccountService:
+
+  github.com/daemondxx/lks_back/internal/server/middleware:
+    config:
+      dir: "mocks/server/{{.PackageName}}"
+    interfaces:
+      AccountService:
+      TokenService:
