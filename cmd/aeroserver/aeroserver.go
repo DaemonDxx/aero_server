@@ -3,15 +3,19 @@ package main
 import (
 	"fmt"
 	"github.com/daemondxx/lks_back/internal/app"
+	"github.com/daemondxx/lks_back/internal/config"
 	"github.com/daemondxx/lks_back/internal/logger"
 )
 
+// @title			AeroBot server
+// @version		1.0
+// @description	Server for aero bot
 func main() {
 
 	log := logger.NewLogger(logger.DEV)
 
 	log.Info().Msg("init config...")
-	cfg, err := app.InitConfig()
+	cfg, err := config.InitConfig()
 	if err != nil {
 		log.Fatal().Msg(fmt.Sprintf("init config error: %e", err))
 	}
@@ -24,7 +28,7 @@ func main() {
 	}
 	log.Info().Msg("aeroserver init successful")
 
-	log.Info().Msg(fmt.Sprintf("start aeroserver on port %s", cfg.GRPC.Port))
+	log.Info().Msg(fmt.Sprintf("start aeroserver on port %s", cfg.Http.Port))
 	if err := a.Run(); err != nil {
 		log.Fatal().Msg(fmt.Sprintf("start aeroserver error: %e", err))
 	}
