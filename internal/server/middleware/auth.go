@@ -49,6 +49,8 @@ func (a *AuthMiddleware) Handler(c *gin.Context) {
 	accID, err := a.tServ.Parse(t)
 
 	if err != nil {
+		defer c.Abort()
+
 		var msg string
 		switch {
 		case errors.Is(err, jwt.ErrTokenMalformed):
