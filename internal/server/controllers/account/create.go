@@ -32,7 +32,7 @@ type CreateAccountResponse struct {
 func (ctrl *controller) CreateAccount(c *gin.Context) {
 	var body CreateAccountBody
 
-	if err := c.ShouldBind(&body); err != nil {
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.Error(err)
 		return
 	}
