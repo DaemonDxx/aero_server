@@ -6,7 +6,7 @@ import (
 	"github.com/daemondxx/lks_back/internal/server/middleware"
 	service_account "github.com/daemondxx/lks_back/internal/server/services/account"
 	"github.com/daemondxx/lks_back/internal/services"
-	account_mock "github.com/daemondxx/lks_back/mocks/server/controllers/account"
+	ctrl_account_mock "github.com/daemondxx/lks_back/mocks/server/controllers/account"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -18,13 +18,13 @@ import (
 
 type AccountCreateControllerSuite struct {
 	suite.Suite
-	accServ *account_mock.MockAccountService
+	accServ *ctrl_account_mock.MockAccountService
 	ctrl    *controller
 	r       *gin.Engine
 }
 
 func (s *AccountCreateControllerSuite) SetupSuite() {
-	s.accServ = &account_mock.MockAccountService{}
+	s.accServ = &ctrl_account_mock.MockAccountService{}
 	s.ctrl = NewAccountController(s.accServ)
 	s.r = gin.Default()
 	s.r.Use(middleware.ErrorMiddleware())
