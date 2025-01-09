@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,43 +32,45 @@ type Server struct {
 }
 
 func NewServer(cfg *config.Config, log *zerolog.Logger) (*Server, error) {
+	l := log.With().Str("context", "http_server").Logger()
 	s := &Server{
 		cfg: cfg,
-		log: log,
+		log: &l,
 	}
 
+	l.Info().Msg("init database")
 	if err := s.initDB(); err != nil {
+		l.Error().Err(err).Msg("init database failed")
 		return nil, err
 	}
+	l.Info().Msg("database init successful")
 
+	l.Info().Msg("init http handlers")
 	if err := s.initHandlers(); err != nil {
+		l.Error().Err(err).Msg("init http handlers failed")
 		return nil, err
 	}
+	l.Info().Msg("http handlers init successful")
 
+	l.Info().Msg("init http server")
 	if err := s.initHttpServer(); err != nil {
+		l.Error().Err(err).Msg("init http server failed")
 		return nil, err
 	}
+	l.Info().Msg("http server init successful")
 
 	return s, nil
 }
 
 func (s *Server) initDB() error {
-	log.Info().Msg("init database...")
-
 	d, err := dao.NewDatabase(s.cfg.Database)
 	if err != nil {
-		log.Error().Err(err).Msg("init database failed")
 		return errors.Wrap(err, "failed to init database")
 	}
-	log.Info().Msg("database init successful")
 
-	log.Info().Msg("start migrate database...")
 	if err := d.AutoMigrate(); err != nil {
-		log.Error().Err(err).Msg("failed to migrate database")
 		return errors.Wrap(err, "failed to migrate database")
 	}
-	log.Info().Msg("migrate database successfully")
-
 	s.db = d
 
 	return nil
