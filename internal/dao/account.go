@@ -21,7 +21,7 @@ func NewAccountDAO(db *gorm.DB) *AccountDAO {
 
 func (a *AccountDAO) Find(ctx context.Context, tgID uint64) ([]entity.Account, error) {
 	var accs []entity.Account
-	if err := a.db.WithContext(ctx).Find(&accs, entity.Account{TelegramID: tgID}).Error; err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+	if err := a.db.WithContext(ctx).Find(&accs, entity.Account{TelegramID: tgID}).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return accs, err
 	}
 	return accs, nil
