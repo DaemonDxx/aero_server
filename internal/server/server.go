@@ -5,9 +5,13 @@ import (
 	"github.com/daemondxx/lks_back/internal/config"
 	"github.com/daemondxx/lks_back/internal/dao"
 	ctrl_account "github.com/daemondxx/lks_back/internal/server/controllers/account"
+	ctrl_credential "github.com/daemondxx/lks_back/internal/server/controllers/credential"
 	"github.com/daemondxx/lks_back/internal/server/middleware"
 	account_service "github.com/daemondxx/lks_back/internal/server/services/account"
+	"github.com/daemondxx/lks_back/internal/server/services/authchecker"
+	service_credential "github.com/daemondxx/lks_back/internal/server/services/credential"
 	"github.com/daemondxx/lks_back/internal/server/services/token"
+	lks_mock "github.com/daemondxx/lks_back/mocks/api/lks"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -78,19 +82,28 @@ func (s *Server) initHandlers() error {
 	r.Use(middleware.ErrorMiddleware())
 
 	accDAO := dao.NewAccountDAO(db)
-	tokenServ := token.NewTokenService(token.Config{Secret: []byte(cfg.JWTSecret)})
-	accServ := account_service.NewAccountService(accDAO, tokenServ, log)
+	credDAO := dao.NewCredentialDAO(db)
 
 	tokenServ := token.NewTokenService(token.Config{Secret: []byte(s.cfg.Http.JWTSecret)})
 	accServ := account_service.NewAccountService(accDAO, tokenServ, s.log)
 
+	lksAPI := s.createLKSApi()
+	checkerServ := authchecker.NewAuthCheckerService(lksAPI)
+	credServ := service_credential.NewCredentialService(accServ, checkerServ, credDAO, s.log)
+
 	auth := middleware.NewAuthMiddleware(tokenServ, accServ)
 
 	accCtrl := ctrl_account.NewAccountController(accServ)
+	credCtrl := ctrl_credential.NewCredentialController(credServ)
 
 	{
 		gr := r.Group("/account")
 		accCtrl.ApplyAuthController(gr)
+	}
+	{
+		gr := r.Group("/credential")
+		gr.Use(auth.Handler)
+		credCtrl.ApplyCredentialController(gr)
 	}
 
 	s.eng = r
@@ -98,13 +111,15 @@ func (s *Server) initHandlers() error {
 	return nil
 }
 
-	return &Server{
-		eng: r,
-		srv: &http.Server{
-			Addr:    ":" + strconv.FormatUint(uint64(cfg.Port), 10),
-			Handler: r.Handler(),
-		},
+func (s *Server) createLKSApi() authchecker.LKSApi {
+	switch s.cfg.Env {
+	case "DEV":
+		api := lks_mock.NewLKSApiMock(lks_mock.GetActualOrderFn_AccordLoginEquaslZero())
+		return api
 	}
+	return nil
+}
+
 func (s *Server) initHttpServer() error {
 	s.srv = &http.Server{
 		Addr:    ":" + strconv.FormatUint(uint64(s.cfg.Http.Port), 10),
