@@ -75,7 +75,7 @@ func (a *AuthMiddleware) Handler(c *gin.Context) {
 		return
 	}
 
-	c.Set(injectToken, acc)
+	ProvideAccountInfo(c, acc)
 	c.Next()
 }
 
@@ -91,5 +91,8 @@ func InjectAccountInfo(c *gin.Context) (*entity.Account, error) {
 	}
 
 	return acc, nil
+}
 
+func ProvideAccountInfo(c *gin.Context, acc *entity.Account) {
+	c.Set(injectToken, acc)
 }
