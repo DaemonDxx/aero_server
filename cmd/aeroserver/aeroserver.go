@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/daemondxx/lks_back/internal/app"
 	"github.com/daemondxx/lks_back/internal/config"
 	"github.com/daemondxx/lks_back/internal/logger"
+	"github.com/daemondxx/lks_back/internal/server"
 )
 
 // @title			AeroBot server
@@ -22,7 +22,7 @@ func main() {
 	log.Info().Msg("config init successful")
 
 	log.Info().Msg("init aeroserver...")
-	a, err := app.NewApp(cfg, log)
+	a, err := server.NewServer(&cfg, log)
 	if err != nil {
 		log.Fatal().Msg(fmt.Sprintf("init aeroserver error: %e", err))
 	}
