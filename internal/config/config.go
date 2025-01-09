@@ -52,12 +52,25 @@ type Config struct {
 	//Notifier      NotifierConfig
 	//AutoCollector AutoCollectorConfig
 	Http HttpConfig
+	Env  string `validate:"required"`
 }
 
 func InitConfig() (Config, error) {
 	cfg := Config{}
 
-	path := getEnvOrDefault("CONFIG_FILE_PATH", ".dev.local.env")
+	cfg.Env = getEnvOrDefault("ENV", "DEV")
+
+	var defaultPath string
+	switch cfg.Env {
+	case "PRODUCTION":
+		defaultPath = "./configs/.prod.env"
+	case "DEV":
+		defaultPath = "./configs/.dev.local.env"
+	case "TEST":
+		defaultPath = "./configs/.test.local.env"
+	}
+
+	path := getEnvOrDefault("CONFIG_FILE_PATH", defaultPath)
 
 	if path != "" {
 		if err := godotenv.Load(path); err != nil {

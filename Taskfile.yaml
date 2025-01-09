@@ -1,9 +1,13 @@
 version: '3'
 
 tasks:
-  proto:
+  dev-up:
     cmds:
-      - protoc -I proto proto/*/*.proto --go_out=./gen/pb/go --go_opt=paths=source_relative --go-grpc_out=./gen/pb/go --go-grpc_opt=paths=source_relative
+      - docker compose -f docker-compose.local.yaml --env-file ./configs/.dev.local.env up
+
+  dev-down:
+    cmds:
+      - docker compose down
 
   test-env-up:
     dotenv: ["./tests/.env"]
