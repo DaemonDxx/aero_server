@@ -36,7 +36,7 @@ func (a *AccountDAO) Save(ctx context.Context, acc *entity.Account) error {
 }
 
 func (a *AccountDAO) Get(ctx context.Context, id uint) (*entity.Account, error) {
-	var acc *entity.Account
+	acc := &entity.Account{}
 	if err := a.db.WithContext(ctx).First(acc, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrAccountNotFound
