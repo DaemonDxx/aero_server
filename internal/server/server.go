@@ -99,12 +99,12 @@ func (s *Server) initHandlers() error {
 
 	{
 		gr := r.Group("/account")
-		accCtrl.ApplyAuthController(gr)
+		accCtrl.ApplyHandlers(gr)
 	}
 	{
 		gr := r.Group("/credential")
 		gr.Use(auth.Handler)
-		credCtrl.ApplyCredentialController(gr)
+		credCtrl.ApplyHandlers(gr)
 	}
 
 	s.eng = r

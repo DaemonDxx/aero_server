@@ -19,6 +19,6 @@ func NewAccountController(serv AccountService) *controller {
 	}
 }
 
-func (ctrl *controller) ApplyAuthController(r *gin.RouterGroup) {
+func (ctrl *controller) ApplyHandlers(r *gin.RouterGroup) {
 	r.POST("/", ctrl.CreateAccount)
 }

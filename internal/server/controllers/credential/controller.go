@@ -21,7 +21,7 @@ func NewCredentialController(crServ CredentialService) *controller {
 	}
 }
 
-func (ctrl *controller) ApplyCredentialController(r *gin.RouterGroup) {
+func (ctrl *controller) ApplyHandlers(r *gin.RouterGroup) {
 	r.POST("/", ctrl.CreateCredential)
 	r.PATCH("/:id", ctrl.UpdateCredential)
 }
