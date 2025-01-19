@@ -39,6 +39,13 @@ packages:
     interfaces:
       CredentialService:
 
+  github.com/daemondxx/lks_back/internal/server/controllers/order:
+    config:
+      outpkg: "ctrl_{{.PackageName}}_mock"
+      dir: "mocks/server/controllers/order"
+    interfaces:
+      OrderService:
+
   github.com/daemondxx/lks_back/internal/server/middleware:
     config:
       dir: "mocks/server/{{.PackageName}}"
