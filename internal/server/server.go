@@ -6,10 +6,12 @@ import (
 	"github.com/daemondxx/lks_back/internal/dao"
 	ctrl_account "github.com/daemondxx/lks_back/internal/server/controllers/account"
 	ctrl_credential "github.com/daemondxx/lks_back/internal/server/controllers/credential"
+	ctrl_order "github.com/daemondxx/lks_back/internal/server/controllers/order"
 	"github.com/daemondxx/lks_back/internal/server/middleware"
 	account_service "github.com/daemondxx/lks_back/internal/server/services/account"
 	"github.com/daemondxx/lks_back/internal/server/services/authchecker"
 	service_credential "github.com/daemondxx/lks_back/internal/server/services/credential"
+	"github.com/daemondxx/lks_back/internal/server/services/order"
 	"github.com/daemondxx/lks_back/internal/server/services/token"
 	lks_mock "github.com/daemondxx/lks_back/mocks/api/lks"
 	"github.com/gin-gonic/gin"
@@ -84,6 +86,7 @@ func (s *Server) initHandlers() error {
 
 	accDAO := dao.NewAccountDAO(db)
 	credDAO := dao.NewCredentialDAO(db)
+	orderDAO := dao.NewOrderDAO(db)
 
 	tokenServ := token.NewTokenService(token.Config{Secret: []byte(s.cfg.Http.JWTSecret)})
 	accServ := account_service.NewAccountService(accDAO, tokenServ, s.log)
@@ -92,10 +95,13 @@ func (s *Server) initHandlers() error {
 	checkerServ := authchecker.NewAuthCheckerService(lksAPI)
 	credServ := service_credential.NewCredentialService(accServ, checkerServ, credDAO, s.log)
 
+	orderServ := order.NewOrderService(orderDAO, s.log)
+
 	auth := middleware.NewAuthMiddleware(tokenServ, accServ)
 
 	accCtrl := ctrl_account.NewAccountController(accServ)
 	credCtrl := ctrl_credential.NewCredentialController(credServ)
+	orderCtrl := ctrl_order.NewOrderController(orderServ)
 
 	{
 		gr := r.Group("/account")
@@ -105,6 +111,12 @@ func (s *Server) initHandlers() error {
 		gr := r.Group("/credential")
 		gr.Use(auth.Handler)
 		credCtrl.ApplyHandlers(gr)
+	}
+
+	{
+		gr := r.Group("/order")
+		gr.Use(auth.Handler)
+		orderCtrl.ApplyHandlers(gr)
 	}
 
 	s.eng = r

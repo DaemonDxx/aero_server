@@ -14,7 +14,7 @@ const (
 
 type Order struct {
 	gorm.Model
-	UserID uint        `json:"userID"`
-	Items  []OrderItem `json:"items"`
-	Status OrderStatus `json:"status"`
+	CredentialID uint        `json:"credentialID" gorm:"column:credential_id"`
+	Items        []OrderItem `json:"items"`
+	Status       OrderStatus `json:"status"`
 }

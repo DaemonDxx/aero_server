@@ -21,6 +21,12 @@ packages:
       AuthChecker:
       CredentialDAO:
 
+  github.com/daemondxx/lks_back/internal/server/services/order:
+    config:
+      dir: "mocks/server/services/order"
+    interfaces:
+      OrderDAO:
+
   github.com/daemondxx/lks_back/internal/server/controllers/account:
     config:
       dir: "mocks/server/controllers/account"
@@ -32,6 +38,13 @@ packages:
       dir: "mocks/server/controllers/credential"
     interfaces:
       CredentialService:
+
+  github.com/daemondxx/lks_back/internal/server/controllers/order:
+    config:
+      outpkg: "ctrl_{{.PackageName}}_mock"
+      dir: "mocks/server/controllers/order"
+    interfaces:
+      OrderService:
 
   github.com/daemondxx/lks_back/internal/server/middleware:
     config:
