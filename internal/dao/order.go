@@ -30,36 +30,16 @@ func (d *OrderDAO) Create(ctx context.Context, o *entity.Order) error {
 	return nil
 }
 
-func (d *OrderDAO) GetLastOrder(ctx context.Context, userID uint) (entity.Order, error) {
-	var order entity.Order
+func (d *OrderDAO) FindLastOrders(ctx context.Context, credID uint, limit int) ([]entity.Order, error) {
+	var order []entity.Order
 	if err := d.db.
 		WithContext(ctx).
-		Where("user_id = ?", userID).
+		Preload("OrderItem.Flights").
+		Where("credential_id = ?", credID).
 		Order("created_at desc").
-		Limit(1).
-		Take(&order).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return order, ErrOrderNotFound
-		} else {
-			return order, err
-		}
-	}
-	if err := d.db.
-		WithContext(ctx).
-		Model(&order).
-		Association("Items").
-		Find(&order.Items); err != nil {
-		return order, err
-	}
-
-	for i, item := range order.Items {
-		if err := d.db.
-			WithContext(ctx).
-			Model(&item).
-			Association("Flights").
-			Find(&order.Items[i].Flights); err != nil {
-			return order, fmt.Errorf("get flight by item %d error: %e", item.ID, err)
-		}
+		Limit(limit).
+		Find(&order).Error; err != nil {
+		return nil, err
 	}
 
 	return order, nil
