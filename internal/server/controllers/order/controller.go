@@ -1,4 +1,4 @@
-package order
+package ctrl_order
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 
 type OrderService interface {
 	GetActualOrders(ctx context.Context, acc entity.Account) ([]entity.Order, error)
-	ConfirmOrder(ctx context.Context, acc entity.Account, orderID uint) error
 }
 
 type controller struct {

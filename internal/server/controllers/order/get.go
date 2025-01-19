@@ -1,4 +1,4 @@
-package order
+package ctrl_order
 
 import (
 	"github.com/daemondxx/lks_back/entity"
