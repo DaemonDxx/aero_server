@@ -16,7 +16,9 @@ type controller struct {
 }
 
 func NewOrderController(serv OrderService) *controller {
-	return &controller{}
+	return &controller{
+		serv: serv,
+	}
 }
 
 func (ctrl *controller) ApplyHandlers(g *gin.RouterGroup) {
