@@ -1,4 +1,4 @@
-package puller
+package service_order
 
 import (
 	"context"
@@ -24,7 +24,7 @@ func (s *Service) Pull(ctx context.Context, cr *entity.Credential) (*entity.Orde
 		return s.createEmptyOrder(ctx, cr)
 	}
 
-	lo, err := s.dao.FindLastOrders(ctx, cr, 1)
+	lo, err := s.orderDAO.FindLastOrders(ctx, cr, 1)
 	if err != nil {
 		return nil, &services.ErrServ{
 			Service: servName,
@@ -93,7 +93,7 @@ func (s *Service) createOrder(ctx context.Context, cr *entity.Credential, i []en
 		Items:        i,
 		Status:       entity.AwaitConfirmation,
 	}
-	if err := s.dao.Save(ctx, o); err != nil {
+	if err := s.orderDAO.Save(ctx, o); err != nil {
 		return nil, &services.ErrServ{
 			Service: servName,
 			Message: "save order failed",

@@ -1,10 +1,12 @@
-package order
+package service_order
 
 import (
 	"context"
 	"github.com/daemondxx/lks_back/entity"
 	"github.com/daemondxx/lks_back/internal/logger"
-	order_mock "github.com/daemondxx/lks_back/mocks/server/services/order"
+	"github.com/daemondxx/lks_back/internal/services"
+	service_order_mock "github.com/daemondxx/lks_back/mocks/server/services/order"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -15,9 +17,10 @@ import (
 
 type GetActualOrderSuite struct {
 	suite.Suite
-	dao  *order_mock.MockOrderDAO
-	serv *Service
-	acc  *entity.Account
+	oDao  *service_order_mock.MockOrderDAO
+	crDAO *service_order_mock.MockCredentialDAO
+	serv  *Service
+	acc   *entity.Account
 }
 
 func TestService_GetActualOrders(t *testing.T) {
@@ -26,10 +29,17 @@ func TestService_GetActualOrders(t *testing.T) {
 
 func (s *GetActualOrderSuite) SetupSuite() {
 	log := logger.NewLogger("DEV")
-	s.dao = &order_mock.MockOrderDAO{}
-	s.serv = NewOrderService(s.dao, log)
+	s.oDao = &service_order_mock.MockOrderDAO{}
+	s.crDAO = &service_order_mock.MockCredentialDAO{}
 
 	var credID uint = 1
+	s.crDAO.EXPECT().GetByID(mock.Anything, credID).Return(&entity.Credential{Model: gorm.Model{ID: credID}}, nil)
+	s.serv = &Service{
+		LoggedService: services.NewLoggedService("order_test", log),
+		orderDAO:      s.oDao,
+		crDAO:         s.crDAO,
+	}
+
 	s.acc = &entity.Account{
 		Model: gorm.Model{
 			ID: 1,
@@ -40,7 +50,7 @@ func (s *GetActualOrderSuite) SetupSuite() {
 }
 
 func (s *GetActualOrderSuite) TestReturnEmptyOrders() {
-	findFn := s.dao.EXPECT().FindLastOrders(mock.Anything, mock.Anything, 2).Return([]entity.Order{}, nil)
+	findFn := s.oDao.EXPECT().FindLastOrders(mock.Anything, mock.Anything, 2).Return([]entity.Order{}, nil)
 	defer findFn.Unset()
 
 	o, err := s.serv.GetActualOrders(context.Background(), *s.acc)
@@ -50,7 +60,7 @@ func (s *GetActualOrderSuite) TestReturnEmptyOrders() {
 }
 
 func (s *GetActualOrderSuite) TestReturnTwoActualOrders() {
-	findFn := s.dao.EXPECT().FindLastOrders(mock.Anything, mock.Anything, 2).Return(makeActualOrders(2), nil)
+	findFn := s.oDao.EXPECT().FindLastOrders(mock.Anything, mock.Anything, 2).Return(makeActualOrders(2), nil)
 	defer findFn.Unset()
 
 	o, err := s.serv.GetActualOrders(context.Background(), *s.acc)
@@ -65,7 +75,7 @@ func (s *GetActualOrderSuite) TestReturnOneActualOrder() {
 	o = append(o, makeActualOrders(1)...)
 	o = append(o, makeNonActualOrders(1)...)
 
-	findFn := s.dao.EXPECT().FindLastOrders(mock.Anything, mock.Anything, 2).Return(o, nil)
+	findFn := s.oDao.EXPECT().FindLastOrders(mock.Anything, mock.Anything, 2).Return(o, nil)
 	defer findFn.Unset()
 
 	o, err := s.serv.GetActualOrders(context.Background(), *s.acc)
@@ -85,7 +95,7 @@ func (s *GetActualOrderSuite) TestReturnOneActualOrderIfHasEmptyOrder() {
 		Status:       0,
 	})
 
-	findFn := s.dao.EXPECT().FindLastOrders(mock.Anything, mock.Anything, 2).Return(o, nil)
+	findFn := s.oDao.EXPECT().FindLastOrders(mock.Anything, mock.Anything, 2).Return(o, nil)
 	defer findFn.Unset()
 
 	o, err := s.serv.GetActualOrders(context.Background(), *s.acc)

@@ -1,4 +1,4 @@
-package puller
+package service_order
 
 import (
 	"github.com/daemondxx/lks_back/entity"

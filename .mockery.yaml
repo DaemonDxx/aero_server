@@ -26,12 +26,7 @@ packages:
       dir: "mocks/server/services/order"
     interfaces:
       OrderDAO:
-
-  github.com/daemondxx/lks_back/internal/server/services/puller:
-    config:
-      dir: "mocks/server/services/puller"
-    interfaces:
-      OrderDAO:
+      CredentialDAO:
       LKSApi:
 
   github.com/daemondxx/lks_back/internal/server/controllers/account:
