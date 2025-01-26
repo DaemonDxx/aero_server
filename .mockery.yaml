@@ -27,9 +27,9 @@ packages:
     interfaces:
       OrderDAO:
 
-  github.com/daemondxx/lks_back/internal/server/services/collector:
+  github.com/daemondxx/lks_back/internal/server/services/puller:
     config:
-      dir: "mocks/server/services/collector"
+      dir: "mocks/server/services/puller"
     interfaces:
       OrderDAO:
       LKSApi:

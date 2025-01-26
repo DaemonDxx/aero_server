@@ -1,4 +1,4 @@
-package collector
+package puller
 
 import (
 	"context"

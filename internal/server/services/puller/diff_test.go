@@ -1,4 +1,4 @@
-package collector
+package puller
 
 import (
 	"github.com/daemondxx/lks_back/entity"

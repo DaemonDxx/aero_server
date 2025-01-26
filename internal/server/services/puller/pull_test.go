@@ -1,11 +1,11 @@
-package collector
+package puller
 
 import (
 	"context"
 	"github.com/daemondxx/lks_back/entity"
 	"github.com/daemondxx/lks_back/internal/logger"
 	"github.com/daemondxx/lks_back/internal/services"
-	collector_mock "github.com/daemondxx/lks_back/mocks/server/services/collector"
+	puller_mock "github.com/daemondxx/lks_back/mocks/server/services/puller"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -16,8 +16,8 @@ import (
 
 type collectorPullSuite struct {
 	suite.Suite
-	dao  *collector_mock.MockOrderDAO
-	api  *collector_mock.MockLKSApi
+	dao  *puller_mock.MockOrderDAO
+	api  *puller_mock.MockLKSApi
 	cr   *entity.Credential
 	serv *Service
 }
@@ -27,8 +27,8 @@ func TestCollectorPullSuite(t *testing.T) {
 }
 
 func (s *collectorPullSuite) SetupTest() {
-	s.dao = &collector_mock.MockOrderDAO{}
-	s.api = &collector_mock.MockLKSApi{}
+	s.dao = &puller_mock.MockOrderDAO{}
+	s.api = &puller_mock.MockLKSApi{}
 	s.cr = &entity.Credential{
 		Model: gorm.Model{
 			ID: 1,

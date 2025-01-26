@@ -1,4 +1,4 @@
-package collector
+package puller
 
 import (
 	"context"
@@ -24,8 +24,10 @@ type Service struct {
 	api LKSApi
 }
 
-func NewCollectorService(log *zerolog.Logger) *Service {
+func NewPullerService(d OrderDAO, a LKSApi, log *zerolog.Logger) *Service {
 	return &Service{
-		LoggedService: services.NewLoggedService("collector_service", log),
+		LoggedService: services.NewLoggedService("puller_service", log),
+		dao:           d,
+		api:           a,
 	}
 }
