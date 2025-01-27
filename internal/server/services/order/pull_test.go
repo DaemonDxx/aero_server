@@ -59,7 +59,7 @@ func (s *collectorPullSuite) TestSuccessPullFirstOrder() {
 	saveFn := s.dao.EXPECT().Save(mock.Anything, mock.Anything).Return(nil)
 	defer saveFn.Unset()
 
-	o, err := s.serv.Pull(context.Background(), s.cr)
+	o, err := s.serv.PullNewOrder(context.Background(), s.cr)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), o)
 
@@ -88,7 +88,7 @@ func (s *collectorPullSuite) TestPullOldOrder() {
 	apiFn := s.api.EXPECT().GetActualDuty(mock.Anything, s.cr).Return(pi, nil)
 	defer apiFn.Unset()
 
-	or, err := s.serv.Pull(context.Background(), s.cr)
+	or, err := s.serv.PullNewOrder(context.Background(), s.cr)
 	require.ErrorIs(s.T(), err, ErrOrderIsExist)
 	require.Nil(s.T(), or)
 }
@@ -112,7 +112,7 @@ func (s *collectorPullSuite) TestPullNewOrderWithEmptyLast() {
 	saveFn := s.dao.EXPECT().Save(mock.Anything, mock.Anything).Return(nil)
 	defer saveFn.Unset()
 
-	or, err := s.serv.Pull(context.Background(), s.cr)
+	or, err := s.serv.PullNewOrder(context.Background(), s.cr)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), or)
 
@@ -146,7 +146,7 @@ func (s *collectorPullSuite) TestPullNewOrderWithLast() {
 	saveFn := s.dao.EXPECT().Save(mock.Anything, mock.Anything).Return(nil)
 	defer saveFn.Unset()
 
-	or, err := s.serv.Pull(context.Background(), s.cr)
+	or, err := s.serv.PullNewOrder(context.Background(), s.cr)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), or)
 
@@ -173,10 +173,7 @@ func (s *collectorPullSuite) TestPullEmptyOrder() {
 	saveFn := s.dao.EXPECT().Save(mock.Anything, mock.Anything).Return(nil)
 	defer saveFn.Unset()
 
-	or, err := s.serv.Pull(context.Background(), s.cr)
-	require.NoError(s.T(), err)
-	require.NotNil(s.T(), or)
-
-	assert.Equal(s.T(), 0, len(or.Items))
-	assert.Equal(s.T(), s.cr.ID, or.CredentialID)
+	or, err := s.serv.PullNewOrder(context.Background(), s.cr)
+	require.ErrorIs(s.T(), err, ErrEmptyOrder)
+	require.Nil(s.T(), or)
 }

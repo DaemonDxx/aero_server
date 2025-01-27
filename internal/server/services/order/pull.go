@@ -7,10 +7,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-var errHasNotNewItems = errors.New("has not new items")
-var ErrOrderIsExist = errors.New("order is exist")
+var (
+	ErrOrderIsExist   = errors.New("order is exist")
+	ErrEmptyOrder     = errors.New("empty order")
+	errHasNotNewItems = errors.New("has not new items")
+)
 
-func (s *Service) Pull(ctx context.Context, cr *entity.Credential) (*entity.Order, error) {
+func (s *Service) PullNewOrder(ctx context.Context, cr *entity.Credential) (*entity.Order, error) {
 	i, err := s.pull(ctx, cr)
 	if err != nil {
 		return nil, &services.ErrServ{
@@ -21,7 +24,7 @@ func (s *Service) Pull(ctx context.Context, cr *entity.Credential) (*entity.Orde
 	}
 
 	if len(i) == 0 {
-		return s.createEmptyOrder(ctx, cr)
+		return nil, ErrEmptyOrder
 	}
 
 	lo, err := s.orderDAO.FindLastOrders(ctx, cr, 1)
@@ -34,7 +37,7 @@ func (s *Service) Pull(ctx context.Context, cr *entity.Credential) (*entity.Orde
 	}
 
 	if len(lo) == 0 || len(lo[0].Items) == 0 {
-		return s.createOrder(ctx, cr, i)
+		return s.Create(ctx, cr, i)
 	}
 
 	i, err = s.diff(i, lo[0].Items)
@@ -42,7 +45,7 @@ func (s *Service) Pull(ctx context.Context, cr *entity.Credential) (*entity.Orde
 		return nil, ErrOrderIsExist
 	}
 
-	return s.createOrder(ctx, cr, i)
+	return s.Create(ctx, cr, i)
 }
 
 func (s *Service) pull(ctx context.Context, cr *entity.Credential) ([]entity.OrderItem, error) {
@@ -81,24 +84,4 @@ func (s *Service) diff(target []entity.OrderItem, sub []entity.OrderItem) ([]ent
 	res := make([]entity.OrderItem, len(target))
 	copy(res, target)
 	return res, nil
-}
-
-func (s *Service) createEmptyOrder(ctx context.Context, cr *entity.Credential) (*entity.Order, error) {
-	return s.createOrder(ctx, cr, nil)
-}
-
-func (s *Service) createOrder(ctx context.Context, cr *entity.Credential, i []entity.OrderItem) (*entity.Order, error) {
-	o := &entity.Order{
-		CredentialID: cr.ID,
-		Items:        i,
-		Status:       entity.AwaitConfirmation,
-	}
-	if err := s.orderDAO.Save(ctx, o); err != nil {
-		return nil, &services.ErrServ{
-			Service: servName,
-			Message: "save order failed",
-			Err:     err,
-		}
-	}
-	return o, nil
 }
