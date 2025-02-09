@@ -1,4 +1,4 @@
-package order
+package service_order
 
 import (
 	"context"
@@ -10,17 +10,30 @@ import (
 const servName = "order_service"
 
 type OrderDAO interface {
-	FindLastOrders(ctx context.Context, credID uint, limit int) ([]entity.Order, error)
+	Save(ctx context.Context, o *entity.Order) error
+	FindLastOrders(ctx context.Context, cr *entity.Credential, limit int) ([]entity.Order, error)
+}
+
+type CredentialDAO interface {
+	GetByID(ctx context.Context, id uint) (*entity.Credential, error)
+}
+
+type LKSApi interface {
+	GetActualDuty(ctx context.Context, cr *entity.Credential) ([]entity.OrderItem, error)
 }
 
 type Service struct {
 	services.LoggedService
-	dao OrderDAO
+	orderDAO OrderDAO
+	crDAO    CredentialDAO
+	api      LKSApi
 }
 
-func NewOrderService(dao OrderDAO, log *zerolog.Logger) *Service {
+func NewOrderService(oDao OrderDAO, crDAO CredentialDAO, api LKSApi, log *zerolog.Logger) *Service {
 	return &Service{
 		LoggedService: services.NewLoggedService(servName, log),
-		dao:           dao,
+		orderDAO:      oDao,
+		crDAO:         crDAO,
+		api:           api,
 	}
 }

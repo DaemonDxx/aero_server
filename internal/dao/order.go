@@ -30,12 +30,12 @@ func (d *OrderDAO) Create(ctx context.Context, o *entity.Order) error {
 	return nil
 }
 
-func (d *OrderDAO) FindLastOrders(ctx context.Context, credID uint, limit int) ([]entity.Order, error) {
+func (d *OrderDAO) FindLastOrders(ctx context.Context, cr *entity.Credential, limit int) ([]entity.Order, error) {
 	var order []entity.Order
 	if err := d.db.
 		WithContext(ctx).
 		Preload("OrderItem.Flights").
-		Where("credential_id = ?", credID).
+		Where("credential_id = ?", cr.ID).
 		Order("created_at desc").
 		Limit(limit).
 		Find(&order).Error; err != nil {

@@ -11,7 +11,7 @@ import (
 	account_service "github.com/daemondxx/lks_back/internal/server/services/account"
 	"github.com/daemondxx/lks_back/internal/server/services/authchecker"
 	service_credential "github.com/daemondxx/lks_back/internal/server/services/credential"
-	"github.com/daemondxx/lks_back/internal/server/services/order"
+	service_order "github.com/daemondxx/lks_back/internal/server/services/order"
 	"github.com/daemondxx/lks_back/internal/server/services/token"
 	lks_mock "github.com/daemondxx/lks_back/mocks/api/lks"
 	"github.com/gin-gonic/gin"
@@ -95,7 +95,7 @@ func (s *Server) initHandlers() error {
 	checkerServ := authchecker.NewAuthCheckerService(lksAPI)
 	credServ := service_credential.NewCredentialService(accServ, checkerServ, credDAO, s.log)
 
-	orderServ := order.NewOrderService(orderDAO, s.log)
+	orderServ := service_order.NewOrderService(orderDAO, credDAO, lksAPI, s.log)
 
 	auth := middleware.NewAuthMiddleware(tokenServ, accServ)
 

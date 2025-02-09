@@ -5,29 +5,29 @@ import "github.com/daemondxx/lks_back/entity"
 type element struct {
 	next *element
 	prev *element
-	v    *entity.User
+	v    *entity.Credential
 }
 
-type userList struct {
+type credentialList struct {
 	head *element
 	last *element
 	len  int
 }
 
-func newUserList(users []entity.User) *userList {
-	l := userList{}
-	for i := range users {
-		l.Insert(&users[i])
+func newCredentialList(creds []entity.Credential) *credentialList {
+	l := credentialList{}
+	for i := range creds {
+		l.Insert(&creds[i])
 	}
 
 	return &l
 }
 
-func (l *userList) First() *element {
+func (l *credentialList) First() *element {
 	return l.head
 }
 
-func (l *userList) Insert(u *entity.User) {
+func (l *credentialList) Insert(u *entity.Credential) {
 	el := &element{
 		next: nil,
 		prev: nil,
@@ -46,7 +46,7 @@ func (l *userList) Insert(u *entity.User) {
 	l.len++
 }
 
-func (l *userList) Remove(el *element) {
+func (l *credentialList) Remove(el *element) {
 	if l.head == nil {
 		return
 	}
@@ -74,12 +74,12 @@ func (l *userList) Remove(el *element) {
 	l.len--
 }
 
-func (l *userList) Len() int {
+func (l *credentialList) Len() int {
 	return l.len
 }
 
-func (l *userList) Array() []*entity.User {
-	arr := make([]*entity.User, 0, l.len)
+func (l *credentialList) Array() []*entity.Credential {
+	arr := make([]*entity.Credential, 0, l.len)
 	el := l.First()
 	if el == nil {
 		return arr

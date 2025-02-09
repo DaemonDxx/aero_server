@@ -1,4 +1,4 @@
-package order
+package service_order
 
 import (
 	"context"
@@ -8,7 +8,16 @@ import (
 )
 
 func (s *Service) GetActualOrders(ctx context.Context, acc entity.Account) ([]entity.Order, error) {
-	o, err := s.dao.FindLastOrders(ctx, *acc.CredentialID, 2)
+	cr, err := s.crDAO.GetByID(ctx, *acc.CredentialID)
+	if err != nil {
+		return nil, &services.ErrServ{
+			Service: servName,
+			Message: "get credential failed",
+			Err:     err,
+		}
+	}
+
+	o, err := s.orderDAO.FindLastOrders(ctx, cr, 2)
 	if err != nil {
 		return nil, &services.ErrServ{
 			Service: servName,

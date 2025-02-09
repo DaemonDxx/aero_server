@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/daemondxx/lks_back/entity"
 	"github.com/rs/zerolog"
 	"github.com/valyala/fasthttp"
 	"os"
@@ -59,9 +60,9 @@ func NewLksAPI(cfg *LksAPIConfig, cache CookieCache, log *zerolog.Logger) *LksAP
 	return lks
 }
 
-func (a *LksAPI) GetActualDuty(ctx context.Context, p AuthPayload) ([]CurrentDuty, error) {
+func (a *LksAPI) GetActualDuty(ctx context.Context, cr *entity.Credential) ([]entity.OrderItem, error) {
 	log := a.getLogger("get_actual_duty")
-	cookie, err := a.auth(ctx, p.AccordLogin, p.AccordPassword, p.LksLogin, p.LksPassword)
+	cookie, err := a.auth(ctx, cr.AccordLogin, cr.AccordPassword, cr.LKSLogin, cr.LKSPassword)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func (a *LksAPI) GetActualDuty(ctx context.Context, p AuthPayload) ([]CurrentDut
 		req.Header.SetCookie(name, value)
 	}
 	req.Header.SetContentType("application/json; charset=UTF-8")
-	req.SetBodyString(fmt.Sprintf("{\"staffNumber\":%s}", p.LksLogin))
+	req.SetBodyString(fmt.Sprintf("{\"staffNumber\":%s}", cr.LKSLogin))
 
 	log.Debug().Msg("send request...")
 	if err := fasthttp.DoTimeout(req, res, 20*time.Second); err != nil {
@@ -101,7 +102,7 @@ func (a *LksAPI) GetActualDuty(ctx context.Context, p AuthPayload) ([]CurrentDut
 		return nil, err
 	}
 
-	return resBody.Model.Duties, nil
+	return resBody.extractOrderItems(), nil
 
 }
 

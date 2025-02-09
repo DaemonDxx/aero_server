@@ -2,11 +2,11 @@ package authchecker
 
 import (
 	"context"
-	"github.com/daemondxx/lks_back/internal/api/lks"
+	"github.com/daemondxx/lks_back/entity"
 )
 
 type LKSApi interface {
-	GetActualDuty(ctx context.Context, p lks.AuthPayload) ([]lks.CurrentDuty, error)
+	GetActualDuty(ctx context.Context, cr *entity.Credential) ([]entity.OrderItem, error)
 }
 
 type Service struct {

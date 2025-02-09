@@ -26,6 +26,16 @@ packages:
       dir: "mocks/server/services/order"
     interfaces:
       OrderDAO:
+      CredentialDAO:
+      LKSApi:
+
+  github.com/daemondxx/lks_back/internal/server/services/collector:
+    config:
+      dir: "mocks/server/services/collector"
+    interfaces:
+      CredentialDAO:
+      OrderService:
+      NotificationService:
 
   github.com/daemondxx/lks_back/internal/server/controllers/account:
     config:
@@ -35,14 +45,14 @@ packages:
 
   github.com/daemondxx/lks_back/internal/server/controllers/credential:
     config:
-      dir: "mocks/server/controllers/credential"
+      dir: "mocks/server/controllers/{{.PackageName}}"
     interfaces:
       CredentialService:
 
   github.com/daemondxx/lks_back/internal/server/controllers/order:
     config:
       outpkg: "ctrl_{{.PackageName}}_mock"
-      dir: "mocks/server/controllers/order"
+      dir: "mocks/server/controllers/{{.PackageName}}"
     interfaces:
       OrderService:
 

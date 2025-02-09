@@ -4,31 +4,32 @@ import (
 	"github.com/daemondxx/lks_back/entity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 	"testing"
 )
 
 var casesInsert = []struct {
 	name         string
-	insert       []*entity.User
-	init         []entity.User
+	insert       []*entity.Credential
+	init         []entity.Credential
 	resultLength int
 }{
 	{
 		name:         "init list",
-		insert:       []*entity.User{},
-		init:         []entity.User{entity.User{ID: 0}, entity.User{ID: 1}},
+		insert:       []*entity.Credential{},
+		init:         []entity.Credential{createCredWithID(0), createCredWithID(1)},
 		resultLength: 2,
 	},
 	{
 		name:         "insert one object",
-		insert:       []*entity.User{&entity.User{ID: 0}},
-		init:         []entity.User{},
+		insert:       []*entity.Credential{createCredWithIDPtr(0)},
+		init:         []entity.Credential{},
 		resultLength: 1,
 	},
 	{
 		name:         "insert some object with init array",
-		insert:       []*entity.User{&entity.User{ID: 3}, &entity.User{ID: 4}},
-		init:         []entity.User{entity.User{ID: 0}, entity.User{ID: 1}},
+		insert:       []*entity.Credential{createCredWithIDPtr(3), createCredWithIDPtr(4)},
+		init:         []entity.Credential{createCredWithID(0), createCredWithID(1)},
 		resultLength: 4,
 	},
 }
@@ -36,7 +37,7 @@ var casesInsert = []struct {
 func TestUserList_Insert(t *testing.T) {
 	for _, tt := range casesInsert {
 		t.Run(tt.name, func(t *testing.T) {
-			l := newUserList(tt.init)
+			l := newCredentialList(tt.init)
 			for _, u := range tt.insert {
 				l.Insert(u)
 			}
@@ -47,40 +48,52 @@ func TestUserList_Insert(t *testing.T) {
 
 var casesRemove = []struct {
 	name        string
-	init        []entity.User
+	init        []entity.Credential
 	removeIndex []int
 	resultIDs   []uint
 }{
 	{
 		name:        "remove head el",
-		init:        []entity.User{entity.User{ID: 0}, entity.User{ID: 1}, entity.User{ID: 2}},
+		init:        []entity.Credential{createCredWithID(0), createCredWithID(1), createCredWithID(2)},
 		removeIndex: []int{0},
 		resultIDs:   []uint{1, 2},
 	},
 	{
 		name:        "remove last el",
-		init:        []entity.User{entity.User{ID: 0}},
+		init:        []entity.Credential{createCredWithID(0)},
 		removeIndex: []int{0},
 		resultIDs:   []uint{},
 	},
 	{
 		name:        "remove last",
-		init:        []entity.User{entity.User{ID: 0}, entity.User{ID: 1}, entity.User{ID: 2}},
+		init:        []entity.Credential{createCredWithID(0), createCredWithID(1), createCredWithID(2)},
 		removeIndex: []int{2},
 		resultIDs:   []uint{0, 1},
 	},
 	{
 		name:        "remove middle",
-		init:        []entity.User{entity.User{ID: 0}, entity.User{ID: 1}, entity.User{ID: 2}, entity.User{ID: 3}},
+		init:        []entity.Credential{createCredWithID(0), createCredWithID(1), createCredWithID(2), createCredWithID(3)},
 		removeIndex: []int{1, 2},
 		resultIDs:   []uint{0, 3},
 	},
 }
 
+func createCredWithID(id uint) entity.Credential {
+	return entity.Credential{
+		Model: gorm.Model{ID: id},
+	}
+}
+
+func createCredWithIDPtr(id uint) *entity.Credential {
+	return &entity.Credential{
+		Model: gorm.Model{ID: id},
+	}
+}
+
 func TestUserList_Remove(t *testing.T) {
 	for _, tt := range casesRemove {
 		t.Run(tt.name, func(t *testing.T) {
-			l := newUserList(tt.init)
+			l := newCredentialList(tt.init)
 
 			el := l.First()
 			var next *element
