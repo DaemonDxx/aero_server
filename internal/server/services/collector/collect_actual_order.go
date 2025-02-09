@@ -17,23 +17,13 @@ const defaultMaxAttempts = 1
 const defaultMinTimeoutRetry = 1 * time.Minute
 const defaultTimeoutContext = 30 * time.Second
 
-func (s *Service) CollectActualOrder(ctx context.Context) error {
+func (s *Service) CollectActualOrder(ctx context.Context, crs []entity.Credential) error {
 	log := s.GetLogger("collect_actual_order")
-
-	log.Debug().Msg("find all active user")
-	creds, err := s.crDAO.GetActualCredential(ctx)
-	if err != nil {
-		return &services.ErrServ{
-			Service: servName,
-			Message: "find all active credential failed",
-			Err:     err,
-		}
-	}
 
 	var cr *entity.Credential
 	attempt := 0
 	startTryTime := time.Now()
-	l := newCredentialList(creds)
+	l := newCredentialList(crs)
 
 	for l.Len() != 0 {
 		if attempt >= s.cfg.MaxAttempts {

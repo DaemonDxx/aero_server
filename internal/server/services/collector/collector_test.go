@@ -21,7 +21,6 @@ type TestCollectActualOrderSuite struct {
 	nServ *m.MockNotificationService
 	log   *zerolog.Logger
 
-	fnFind   *m.MockCredentialDAO_GetActualCredential_Call
 	fnPull   *m.MockOrderService_PullNewOrder_Call
 	fnNotify *m.MockNotificationService_Send_Call
 }
@@ -39,7 +38,6 @@ func (s *TestCollectActualOrderSuite) SetupSuite() {
 }
 
 func (s *TestCollectActualOrderSuite) AfterTest(sName string, tName string) {
-	s.fnFind.Unset()
 	s.fnPull.Unset()
 	s.fnNotify.Unset()
 }
@@ -60,14 +58,12 @@ func (s *TestCollectActualOrderSuite) TestSuccessCollect() {
 		MinTimeoutRetry: 100 * time.Millisecond,
 	}, s.log)
 
-	s.fnFind = s.uDao.EXPECT().GetActualCredential(mock.Anything).Return(crs, nil)
 	s.fnPull = s.oServ.EXPECT().PullNewOrder(mock.Anything, &crs[0]).Return(&order, nil)
 	s.fnNotify = s.nServ.EXPECT().Send(mock.Anything).Return(nil)
 
-	err := c.CollectActualOrder(context.Background())
+	err := c.CollectActualOrder(context.Background(), crs)
 	s.wait()
 
-	s.fnFind.Once()
 	s.fnPull.Once()
 	s.fnNotify.Once()
 
@@ -75,7 +71,7 @@ func (s *TestCollectActualOrderSuite) TestSuccessCollect() {
 }
 
 func (s *TestCollectActualOrderSuite) TestLimitAttemptErrorCollect() {
-	cr := []entity.Credential{
+	crs := []entity.Credential{
 		{
 			Model: gorm.Model{ID: 0},
 		},
@@ -91,20 +87,18 @@ func (s *TestCollectActualOrderSuite) TestLimitAttemptErrorCollect() {
 		MinTimeoutRetry: 100 * time.Microsecond,
 	}, s.log)
 
-	s.fnFind = s.uDao.EXPECT().GetActualCredential(mock.Anything).Return(cr, nil)
 	s.fnPull = s.oServ.EXPECT().PullNewOrder(mock.Anything, mock.Anything).Return(&entity.Order{}, context.DeadlineExceeded)
 	s.fnNotify = s.nServ.EXPECT().Send(mock.Anything).Return(nil)
 
-	err := c.CollectActualOrder(context.Background())
+	err := c.CollectActualOrder(context.Background(), crs)
 	s.wait()
 
-	s.fnFind.Once()
-	s.fnPull.Times(maxAttempts * len(cr))
-	s.fnNotify.Times(maxAttempts * len(cr))
+	s.fnPull.Times(maxAttempts * len(crs))
+	s.fnNotify.Times(maxAttempts * len(crs))
 
 	var target *ErrLimitAttempt
 	assert.ErrorAs(s.T(), err, &target)
-	assert.Equal(s.T(), len(cr), len(target.Credentials))
+	assert.Equal(s.T(), len(crs), len(target.Credentials))
 }
 
 func (s *TestCollectActualOrderSuite) TestRetryWithAllSuccessfulResultCollect() {
@@ -138,7 +132,6 @@ func (s *TestCollectActualOrderSuite) TestRetryWithAllSuccessfulResultCollect() 
 		MinTimeoutRetry: 10 * time.Microsecond,
 	}, s.log)
 
-	s.fnFind = s.uDao.EXPECT().GetActualCredential(mock.Anything).Return(crs, nil)
 	s.fnPull = s.oServ.EXPECT().PullNewOrder(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, cr *entity.Credential) (*entity.Order, error) {
 		r, _ := cases[cr.ID]
 		if r.attempt+1 >= r.attemptBySuccessful {
@@ -150,10 +143,9 @@ func (s *TestCollectActualOrderSuite) TestRetryWithAllSuccessfulResultCollect() 
 	})
 	s.fnNotify = s.nServ.EXPECT().Send(mock.Anything).Return(nil)
 
-	err := c.CollectActualOrder(context.Background())
+	err := c.CollectActualOrder(context.Background(), crs)
 	s.wait()
 
-	s.fnFind.Once()
 	s.fnPull.Times(6)
 	s.fnNotify.Times(len(crs))
 
@@ -191,7 +183,6 @@ func (s *TestCollectActualOrderSuite) TestRetryWithSomeFailureResultCollect() {
 		MinTimeoutRetry: 10 * time.Microsecond,
 	}, s.log)
 
-	s.fnFind = s.uDao.EXPECT().GetActualCredential(mock.Anything).Return(crs, nil)
 	s.fnPull = s.oServ.EXPECT().PullNewOrder(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, cr *entity.Credential) (*entity.Order, error) {
 		r, _ := cases[cr.ID]
 		if r.attempt+1 >= r.attemptBySuccessful {
@@ -203,10 +194,9 @@ func (s *TestCollectActualOrderSuite) TestRetryWithSomeFailureResultCollect() {
 	})
 	s.fnNotify = s.nServ.EXPECT().Send(mock.Anything).Return(nil)
 
-	err := c.CollectActualOrder(context.Background())
+	err := c.CollectActualOrder(context.Background(), crs)
 	s.wait()
 
-	s.fnFind.Once()
 	s.fnPull.Times(5)
 	s.fnNotify.Times(len(crs) - 1)
 
@@ -241,7 +231,6 @@ func (s *TestCollectActualOrderSuite) TestTimeoutCollectCollect() {
 		MinTimeoutRetry: timeout,
 	}, s.log)
 
-	s.fnFind = s.uDao.EXPECT().GetActualCredential(mock.Anything).Return(crs, nil)
 	s.fnPull = s.oServ.EXPECT().PullNewOrder(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, cr *entity.Credential) (*entity.Order, error) {
 		r, _ := cases[cr.ID]
 		if r.attempt+1 >= r.attemptBySuccessful {
@@ -254,12 +243,11 @@ func (s *TestCollectActualOrderSuite) TestTimeoutCollectCollect() {
 	s.fnNotify = s.nServ.EXPECT().Send(mock.Anything).Return(nil)
 
 	timeStart := time.Now()
-	err := c.CollectActualOrder(context.Background())
+	err := c.CollectActualOrder(context.Background(), crs)
 	s.wait()
 
 	d := time.Now().Sub(timeStart)
 
-	s.fnFind.Once()
 	s.fnPull.Times(3)
 	s.fnNotify.Times(1)
 

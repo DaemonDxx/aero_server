@@ -16,11 +16,12 @@ type AutoWorkerConfig struct {
 }
 
 type AutoCollectService struct {
-	sch gocron.Scheduler
-	log *zerolog.Logger
+	sch   gocron.Scheduler
+	crDAO CredentialDAO
+	log   *zerolog.Logger
 }
 
-func NewAutoCollectService(s *Service, c *AutoWorkerConfig, log *zerolog.Logger) (*AutoCollectService, error) {
+func NewAutoCollectService(s *Service, crDAO CredentialDAO, c *AutoWorkerConfig, log *zerolog.Logger) (*AutoCollectService, error) {
 	l := log.With().Str("service", "auto_worker_collector").Logger()
 	sch, err := gocron.NewScheduler()
 	if err != nil {
@@ -32,7 +33,14 @@ func NewAutoCollectService(s *Service, c *AutoWorkerConfig, log *zerolog.Logger)
 			l.Info().Msg("start collect actual order...")
 			ctx, cancel := context.WithTimeout(context.Background(), c.TaskTimeout)
 			defer cancel()
-			if err := s.CollectActualOrder(ctx); err != nil {
+
+			log.Debug().Msg("find all active credential")
+			crs, err := s.crDAO.GetActualCredential(ctx)
+			if err != nil {
+				log.Err(err).Msg("find all active credential failed")
+			}
+
+			if err := s.CollectActualOrder(ctx, crs); err != nil {
 				var e *ErrLimitAttempt
 				if errors.As(err, e) {
 					for _, u := range e.Credentials {
@@ -49,7 +57,7 @@ func NewAutoCollectService(s *Service, c *AutoWorkerConfig, log *zerolog.Logger)
 			return nil, fmt.Errorf("create actual order collect job error: %e", err)
 		}
 	}
-	return &AutoCollectService{sch: sch, log: log}, nil
+	return &AutoCollectService{sch: sch, crDAO: crDAO, log: log}, nil
 }
 
 func (aw *AutoCollectService) Start() {
