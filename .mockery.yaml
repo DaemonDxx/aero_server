@@ -29,6 +29,14 @@ packages:
       CredentialDAO:
       LKSApi:
 
+  github.com/daemondxx/lks_back/internal/server/services/collector:
+    config:
+      dir: "mocks/server/services/collector"
+    interfaces:
+      CredentialDAO:
+      OrderService:
+      NotificationService:
+
   github.com/daemondxx/lks_back/internal/server/controllers/account:
     config:
       dir: "mocks/server/controllers/account"
